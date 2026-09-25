@@ -14,6 +14,7 @@ import consultantRoutes from './modules/consultant/consultant.routes';
 import historicalRoutes from './modules/historical/historical.routes';
 import surveyRoutes from './modules/surveys/survey.routes';
 import publicSurveyRoutes from './modules/surveys/publicSurvey.routes';
+import reportRoutes from './modules/reports/report.routes';
 import { authGuard } from './middlewares/authGuard';
 import { requireRole } from './middlewares/rbacGuard';
 import { UserRole } from '@prisma/client';
@@ -111,6 +112,9 @@ app.use('/api/v1/surveys', surveyRoutes);
 
 // Public Anonymous Risk Culture Survey (No Login / Token Only)
 app.use('/api/v1/public/surveys', publicSurveyRoutes);
+
+// Official Assessment Reports & Synchronizers (Excel & PDF Format 1.2.8)
+app.use('/api/v1/reports', reportRoutes);
 
 // Centralized error handling middleware
 app.use(errorHandler);
