@@ -11,6 +11,9 @@ import adminRoutes from './modules/admin/admin.routes';
 import vendorRoutes from './modules/vendor/vendor.routes';
 import counterpartRoutes from './modules/counterpart/counterpart.routes';
 import consultantRoutes from './modules/consultant/consultant.routes';
+import historicalRoutes from './modules/historical/historical.routes';
+import surveyRoutes from './modules/surveys/survey.routes';
+import publicSurveyRoutes from './modules/surveys/publicSurvey.routes';
 import { authGuard } from './middlewares/authGuard';
 import { requireRole } from './middlewares/rbacGuard';
 import { UserRole } from '@prisma/client';
@@ -99,6 +102,15 @@ app.use(
   requireRole(UserRole.EXTERNAL_CONSULTANT, UserRole.ADMINISTRATOR),
   consultantRoutes
 );
+
+// Historical Assessment Baseline & YoY Comparison
+app.use('/api/v1/historical', historicalRoutes);
+
+// Internal Risk Culture Survey Management
+app.use('/api/v1/surveys', surveyRoutes);
+
+// Public Anonymous Risk Culture Survey (No Login / Token Only)
+app.use('/api/v1/public/surveys', publicSurveyRoutes);
 
 // Centralized error handling middleware
 app.use(errorHandler);
