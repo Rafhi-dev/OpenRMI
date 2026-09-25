@@ -91,15 +91,18 @@ Dokumen ini adalah panduan kerja teknis dan pelacak kemajuan pengerjaan fitur (*
 ---
 
 ## 📁 FASE 4: Modul Tim Counterpart (Eviden & Dokumen Tambahan)
-- [ ] Integrasi Cloudflare R2 / S3 Service:
-  - [ ] Presigned URL generator untuk upload langsung berkas dokumen (PDF, DOCX, XLSX)
-  - [ ] Presigned URL generator untuk preview & unduh berdurasi terbatas (15 menit)
-- [ ] Backend API Counterpart (`/api/v1/counterpart/*`):
-  - [ ] Checklist eviden wajib per kriteria parameter (`/evidence-checklist`)
-  - [ ] Upload & hapus dokumen eviden per parameter (`/evidences/*`)
-  - [ ] Upload & manajemen dokumen tambahan pasca-FGD (`/supplementary-documents`)
-  - [ ] Live monitoring progres reviu asesor (`/monitoring-progress`)
-  - [ ] Konfirmasi draf hasil penilaian pimpinan BUMN (`/confirm-draft`)
+- [x] Integrasi Cloudflare R2 / S3 Service (`backend/src/utils/s3.ts`):
+  - [x] Presigned URL generator untuk upload langsung berkas dokumen (PDF, DOCX, XLSX)
+  - [x] Presigned URL generator untuk preview & unduh berdurasi terbatas (15 menit)
+  - [x] Validasi whitelist format berkas (PDF, DOCX, XLSX, JPEG, JPG, PNG) & dynamic max size check
+- [x] Backend API Counterpart (`/api/v1/counterpart/*`):
+  - [x] Checklist eviden wajib per kriteria parameter (`/evidence-checklist`)
+  - [x] Upload & hapus dokumen eviden per parameter (`/evidences/*`)
+  - [x] Upload & manajemen dokumen tambahan pasca-FGD (`/supplementary-documents`)
+  - [x] Live monitoring progres reviu asesor (`/monitoring-progress`) dengan jaminan kerahasiaan catatan asesor (*assessorNotes omitted*)
+  - [x] Konfirmasi draf hasil penilaian pimpinan BUMN (`/confirm-draft`)
+  - [x] Pelaporan tindak lanjut rekomendasi triwulanan (`/follow-ups`: status S, BS, BD, TDD)
+- [x] Integration Tests Suite Fase 4 (`backend/test/counterpart/counterpart.test.ts`: 16/16 tests lulus)
 - [ ] Frontend Portal Tim Counterpart:
   - [ ] Workspace unggah eviden per parameter dengan drag-and-drop
   - [ ] Tab Khusus Dokumen Tambahan & Klarifikasi Pasca-FGD beserta status proses RAG

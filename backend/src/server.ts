@@ -9,6 +9,10 @@ import prisma from './config/database';
 import authRoutes from './modules/auth/auth.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import vendorRoutes from './modules/vendor/vendor.routes';
+import counterpartRoutes from './modules/counterpart/counterpart.routes';
+import { authGuard } from './middlewares/authGuard';
+import { requireRole } from './middlewares/rbacGuard';
+import { UserRole } from '@prisma/client';
 
 import { sanitizeInput } from './utils/sanitizer';
 
@@ -78,6 +82,14 @@ app.use('/api/v1/admin', adminRoutes);
 
 // Vendor Portal Routes (Portofolio Klien & Konsultan Asesor)
 app.use('/api/v1/vendor', vendorRoutes);
+
+// Counterpart Portal Routes (Evidences, Supplementary Docs, Live Monitoring, Follow-ups)
+app.use(
+  '/api/v1/counterpart',
+  authGuard,
+  requireRole(UserRole.COUNTERPART_TEAM, UserRole.ADMINISTRATOR),
+  counterpartRoutes
+);
 
 // Centralized error handling middleware
 app.use(errorHandler);

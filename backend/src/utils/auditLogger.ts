@@ -34,3 +34,8 @@ export const logAuditEvent = async (params: CreateAuditLogParams): Promise<void>
     console.error('[AuditTrail Dispatch Error]:', error);
   }
 };
+
+export const auditLogger = {
+  log: logAuditEvent,
+};
+
