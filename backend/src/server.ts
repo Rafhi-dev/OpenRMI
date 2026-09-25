@@ -8,6 +8,8 @@ import { errorHandler } from './middlewares/errorHandler';
 import prisma from './config/database';
 import authRoutes from './modules/auth/auth.routes';
 
+import { sanitizeInput } from './utils/sanitizer';
+
 dotenv.config();
 
 const app = express();
@@ -22,6 +24,7 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(sanitizeInput);
 
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));

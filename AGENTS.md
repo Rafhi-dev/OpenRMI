@@ -147,7 +147,18 @@ Setiap agen AI atau pengembang yang memodifikasi kode **WAJIB mematuhi invarian 
 4. **Kerahasiaan Catatan Asesor Mutlak (*Strict Assessor Confidentiality*)**:
    - Hasil analisis AI dokumen tambahan (`DocumentAnalysisResult`) beserta catatan internal asesor (`assessorNotes`) **TIDAK BOLEH** pernah dibocorkan atau diekspos ke Tim Counterpart. Endpoint Counterpart tidak boleh menyertakan relasi/field ini dalam respons JSON apa pun.
 5. **Resolusi Konfigurasi AI Terpusat (*Centralized AI Configuration*)**:
-   - Kredensial API Key (DeepSeek & Jina) dan parameter model inferensi tidak boleh di-hardcode ataupun dibaca dari `.env` perorangan. Seluruh service inferensi wajib membaca konfigurasi global dinamis dari tabel `ai_configurations` yang dikelola eksklusif oleh `ADMINISTRATOR`.
+### 4.4 Invarian Keamanan Input & Kebijakan Berkas (Input Sanitization & File Whitelist)
+1. **Validasi & Sanitasi Seluruh Operasi CRUD**:
+   - Seluruh payload request (`body`, `query`, `params`) pada setiap operasi CRUD **wajib melalui validasi skema Zod** via `validateRequest` dan **sanitasi otomatis** via middleware `sanitizeInput`.
+   - Melarang null byte injection (`\0`), inline handlers (`onerror=`, `onload=`), skema `javascript:`, dan script injection HTML (`<script>`).
+2. **Pembatasan Ketat Tipe Berkas Upload (*Strict File Whitelist*)**:
+   - Sistem **HANYA MENERIMA** berkas dengan format dan MIME types berikut:
+     - Dokumen PDF: `.pdf` (`application/pdf`)
+     - Dokumen Word: `.docx` (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`)
+     - Dokumen Spreadsheet Excel: `.xlsx` (`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`)
+     - Gambar Bukti: `.jpeg`, `.jpg` (`image/jpeg`) dan `.png` (`image/png`)
+   - Berkas jenis lain (`.exe`, `.sh`, `.bat`, `.php`, `.js`, `.html`, `.svg`, `.zip`, `.rar`) **WAJIB DITOLAK** dengan pesan error 400 `INVALID_FILE_TYPE`.
+   - Batas ukuran berkas per unggahan adalah **maksimal 50 MB**.
 
 ---
 
