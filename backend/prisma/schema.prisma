@@ -1,0 +1,466 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  ADMINISTRATOR
+  VENDOR
+  EXTERNAL_CONSULTANT
+  COUNTERPART_TEAM
+}
+
+enum IndustryCluster {
+  UMUM      // 42 Parameter
+  PERBANKAN // 42 Parameter
+  ASURANSI  // 41 Parameter
+}
+
+enum AssessmentStatus {
+  DRAFT
+  EVIDENCE_GATHERING
+  UNDER_REVIEW
+  INTERVIEW_PHASE
+  SCORING_STAGE
+  DRAFT_CONFIRMATION
+  FINALIZED
+}
+
+enum RecommendationStatus {
+  S   // Sesuai dengan Rekomendasi
+  BS  // Belum Sesuai dengan Rekomendasi
+  BD  // Belum Ditindaklanjuti
+  TDD // Tidak Dapat Ditindaklanjuti
+}
+
+enum SupplementaryCategory {
+  FGD_FOLLOW_UP
+  INTERVIEW_CLARIFICATION
+  POLICY_REVISION
+  QUANTITATIVE_DATA
+  OTHER
+}
+
+model AiConfiguration {
+  id                   String   @id @default("global_ai_config")
+  deepseekApiKey       String   // Disimpan terenkripsi (AES-256)
+  deepseekBaseUrl      String   @default("https://api.deepseek.com")
+  activeLlmModel       String   @default("deepseek-flash") // deepseek-flash, deepseek-v4-pro
+  thinkingMode         Boolean  @default(true) // Mode thinking / chain-of-thought penalaran regulasi
+  jinaApiKey           String   // Disimpan terenkripsi (AES-256)
+  activeEmbeddingModel String   @default("jina-embeddings-v4") // jina-embeddings-v4, jina-embeddings-v3
+  mineruApiKey         String?  // Disimpan terenkripsi (AES-256)
+  temperature          Decimal  @default(0.1) @db.Decimal(3, 2)
+  maxTokens            Int      @default(4096)
+  updatedAt            DateTime @updatedAt
+
+  @@map("ai_configurations")
+}
+
+model Vendor {
+  id            String    @id @default(uuid())
+  name          String    // Nama Lembaga/Kantor Konsultan Asesmen
+  code          String    @unique // Kode Unik Vendor (e.g. VEND-001)
+  email         String    @unique
+  phone         String?
+  address       String?
+  maxTenants    Int       @default(10) // Batas kuota tenant klien
+  licenseStatus String    @default("ACTIVE") // ACTIVE, SUSPENDED, EXPIRED
+  licenseExpiry DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  users         User[]
+  tenants       Tenant[]
+  auditLogs     AuditLog[]
+
+  @@map("vendors")
+}
+
+model Tenant {
+  id              String           @id @default(uuid())
+  vendorId        String?          // Relasi ke Vendor pengelola
+  code            String           @unique
+  name            String
+  industryCluster IndustryCluster  @default(UMUM)
+  logoUrl         String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  vendor          Vendor?          @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  users           User[]
+  periods         AssessmentPeriod[]
+  assignments     ConsultantAssignment[]
+  evidences       CriterionEvidence[]
+  evaluations     CriterionEvaluation[]
+  supplementaryDocs SupplementaryDocument[]
+
+  @@map("tenants")
+}
+
+model User {
+  id              String           @id @default(uuid())
+  vendorId        String?          // Relasi ke Vendor jika peran VENDOR / EXTERNAL_CONSULTANT
+  tenantId        String?          // Relasi ke Tenant jika peran COUNTERPART_TEAM
+  role            UserRole
+  fullName        String
+  email           String           @unique
+  passwordHash    String
+  agencyName      String?          // Instansi konsultan jika konsultan eksternal
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  vendor          Vendor?          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  tenant          Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignments     ConsultantAssignment[]
+  auditLogs       AuditLog[]
+  analysisResults DocumentAnalysisResult[]
+
+  @@map("users")
+}
+
+model ConsultantAssignment {
+  id              String           @id @default(uuid())
+  tenantId        String
+  consultantId    String
+  periodId        String
+  ndaDocumentUrl  String?
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  consultant      User             @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+  period          AssessmentPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, consultantId, periodId])
+  @@map("consultant_assignments")
+}
+
+model AssessmentPeriod {
+  id              String           @id @default(uuid())
+  tenantId        String
+  year            Int              // Tahun buku, misal 2023
+  status          AssessmentStatus @default(DRAFT)
+  modelCluster    IndustryCluster  @default(UMUM)
+  aspectDimScore  Decimal?         @db.Decimal(3, 2)
+  perfScore       Decimal?         @db.Decimal(4, 2)
+  adjustmentScore Decimal?         @db.Decimal(3, 2)
+  finalRmiScore   Decimal?         @db.Decimal(3, 2)
+  maturityPhase   String?
+  isLocked        Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignments     ConsultantAssignment[]
+  evaluations     CriterionEvaluation[]
+  perfEvaluation  PerformanceEvaluation?
+  recommendations Recommendation[]
+  aiRecommendations AiAssessmentRecommendation[]
+  supplementaryDocs SupplementaryDocument[]
+  historicalScore HistoricalAssessment?
+  cultureSurvey   RiskCultureSurvey?
+
+  @@unique([tenantId, year])
+  @@map("assessment_periods")
+}
+
+model Dimension {
+  id              Int              @id // 1 s.d. 5
+  code            String           @unique // D1 s.d. D5
+  name            String
+  subDimensions   SubDimension[]
+
+  @@map("dimensions")
+}
+
+model SubDimension {
+  id              Int              @id @default(autoincrement())
+  dimensionId     Int
+  code            String           // a, b, c, d
+  name            String
+  dimension       Dimension        @relation(fields: [dimensionId], references: [id])
+  parameters      Parameter[]
+
+  @@map("sub_dimensions")
+}
+
+model Parameter {
+  id              Int              @id @default(autoincrement())
+  subDimensionId  Int
+  parameterNumber Int              // 1 s.d. 42
+  code            String           @unique // P01 s.d. P42
+  title           String
+  description     String?
+  subDimension    SubDimension     @relation(fields: [subDimensionId], references: [id])
+  criteria        Criterion[]
+
+  @@map("parameters")
+}
+
+model Criterion {
+  id              Int                   @id @default(autoincrement())
+  parameterId     Int
+  letterCode      String                // a, b, c, d, e
+  level           Int                   // 1 s.d. 5
+  statement       String
+  guidanceNotes   String?               // Kolom H
+  defaultEvidences String?              // Kolom I
+  parameter       Parameter             @relation(fields: [parameterId], references: [id])
+  evidences       CriterionEvidence[]
+  evaluations     CriterionEvaluation[]
+
+  @@unique([parameterId, letterCode, level])
+  @@map("criteria")
+}
+
+model CriterionEvidence {
+  id              String               @id @default(uuid())
+  tenantId        String
+  criterionId     Int
+  fileName        String
+  fileUrl         String               // S3 Presigned URL target
+  fileSize        Int
+  mimeType        String
+  docNumber       String?
+  effectiveDate   DateTime?
+  sectionNotes    String?              // Letak pasal/halaman
+  uploadedByRole  UserRole             @default(COUNTERPART_TEAM)
+  createdAt       DateTime             @default(now())
+
+  tenant          Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  criterion       Criterion            @relation(fields: [criterionId], references: [id])
+  documentChunks  DocumentChunk[]
+
+  @@map("criterion_evidences")
+}
+
+model SupplementaryDocument {
+  id              String                  @id @default(uuid())
+  tenantId        String
+  periodId        String
+  fileName        String
+  fileUrl         String
+  fileSize        Int
+  mimeType        String
+  category        SupplementaryCategory   @default(FGD_FOLLOW_UP)
+  description     String?
+  submissionNotes String?
+  uploadedByRole  UserRole                @default(COUNTERPART_TEAM)
+  ragIngestionStatus String               @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  tenant          Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  period          AssessmentPeriod        @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  documentChunks  DocumentChunk[]
+  analysisResults DocumentAnalysisResult[]
+
+  @@map("supplementary_documents")
+}
+
+model DocumentChunk {
+  id                   String                 @id @default(uuid())
+  evidenceId           String?
+  supplementaryDocId   String?
+  pageNumber           Int
+  content              String                 // Teks lengkap satu halaman utuh dari MinerU
+  tableDataJson        Json?                  // Struktur tabel utuh format JSON jika ada
+  createdAt            DateTime               @default(now())
+
+  evidence             CriterionEvidence?     @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  supplementaryDoc     SupplementaryDocument? @relation(fields: [supplementaryDocId], references: [id], onDelete: Cascade)
+
+  @@index([evidenceId])
+  @@index([supplementaryDocId])
+  @@map("document_chunks")
+}
+
+model CriterionEvaluation {
+  id              String           @id @default(uuid())
+  tenantId        String
+  periodId        String
+  criterionId     Int
+  score           Int              // 1 s.d. 5
+  reviewNotes     String?          // Kolom J
+  findingsGap     String?          // Celah temuan
+  interviewNotes  String?          // Kolom K
+  screenshotUrl   String?          // Kolom L
+  assessorNotes   String?          // Catatan internal konsultan
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  period          AssessmentPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  criterion       Criterion        @relation(fields: [criterionId], references: [id])
+
+  @@unique([tenantId, periodId, criterionId])
+  @@map("criterion_evaluations")
+}
+
+model AiAssessmentRecommendation {
+  id              String           @id @default(uuid())
+  periodId        String
+  parameterCode   String           // P01 s.d. P42
+  recommendedScore Int             // 1 s.d. 5
+  modelUsed       String           // deepseek-flash, deepseek-v4-pro
+  thinkingProcess String?          // Chain-of-thought jika thinking mode aktif
+  criteriaDetails Json             // Array: [{ criterion: 'a', score: 3, pageRef: 12, quote: '...' }]
+  isApplied       Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+
+  period          AssessmentPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  @@index([periodId, parameterCode])
+  @@map("ai_assessment_recommendations")
+}
+
+model DocumentAnalysisResult {
+  id                   String                @id @default(uuid())
+  supplementaryDocId   String
+  assessorId           String
+  promptGiven          String
+  aiGeneratedAnalysis  String
+  assessorNotes        String?
+  pageReferences       Int[]
+  modelUsed            String
+  thinkingProcess      String?
+  isPrivateToAssessor  Boolean               @default(true) // Tersembunyi dari Tim Counterpart
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  supplementaryDoc     SupplementaryDocument @relation(fields: [supplementaryDocId], references: [id], onDelete: Cascade)
+  assessor             User                  @relation(fields: [assessorId], references: [id], onDelete: Cascade)
+
+  @@index([supplementaryDocId])
+  @@map("document_analysis_results")
+}
+
+model PerformanceEvaluation {
+  id              String           @id @default(uuid())
+  periodId        String           @unique
+  finalRating     String           // AAA, AA, A, BBB, dst.
+  kpmrScore       Decimal          @db.Decimal(5, 2)
+  compositeRating Int              // 1 s.d. 5
+  spiReviewNotes  String?
+  period          AssessmentPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  @@map("performance_evaluations")
+}
+
+model HistoricalAssessment {
+  id              String           @id @default(uuid())
+  periodId        String           @unique
+  previousYear    Int              // Contoh: 2022
+  aspectDimScore  Decimal?         @db.Decimal(3, 2)
+  perfScore       Decimal?         @db.Decimal(4, 2)
+  finalRmiScore   Decimal?         @db.Decimal(3, 2)
+  maturityPhase   String?          // Awal, Berkembang, Baik, Lebih Baik, Terbaik
+  dimensionScores Json?            // { "D1": 3.20, "D2": 2.80, ... }
+  parameterScores Json?            // { "P1": 3, "P2": 2, ... } (opsional)
+  inputtedByRole  String           // "EXTERNAL_CONSULTANT" atau "COUNTERPART_TEAM"
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  period          AssessmentPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  @@map("historical_assessments")
+}
+
+model RiskCultureSurvey {
+  id              String           @id @default(uuid())
+  periodId        String           @unique
+  publicToken     String           @unique // Token unik URL publik tanpa login
+  isActive        Boolean          @default(true)
+  startDate       DateTime?
+  endDate         DateTime?
+  totalResponses  Int              @default(0)
+  averageScore    Decimal?         @db.Decimal(3, 2)
+  categoryScores  Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  period          AssessmentPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  responses       SurveyResponse[]
+
+  @@map("risk_culture_surveys")
+}
+
+model SurveyResponse {
+  id              String            @id @default(uuid())
+  surveyId        String
+  division        String?           // Divisi / Direktorat (Anonim)
+  jobLevel        String?           // Staf, Supervisor, Manajer (Anonim)
+  tenureYears     Int?              // Masa kerja (Anonim)
+  answers         Json              // Array skor Likert [4, 5, 3, ...]
+  calculatedScore Decimal           @db.Decimal(3, 2)
+  submittedAt     DateTime          @default(now())
+
+  survey          RiskCultureSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+
+  @@map("survey_responses")
+}
+
+model Recommendation {
+  id               Int                  @id @default(autoincrement())
+  periodId         String
+  parameterCode    String
+  recommendation   String
+  targetDate       DateTime             // Format dd-mm-yyyy, default 30 Nov
+  mainActivities   String
+  expectedOutput   String
+  successIndicator String
+  unitInCharge     String               // UIC (Divisi penanggung jawab)
+  priorityQuadrant Int                  // 1: Dampak Tinggi/Mudah, 2: Tinggi/Sulit atau Rendah/Mudah, 3: Rendah/Sulit
+  horizon          String               // SHORT_TERM (<1 thn), LONG_TERM (>1 thn)
+  status           RecommendationStatus @default(BD)
+  period           AssessmentPeriod     @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  followUps        FollowUpRecord[]
+
+  @@map("recommendations")
+}
+
+model FollowUpRecord {
+  id               String           @id @default(uuid())
+  recommendationId Int
+  quarter          String           // TW_1, TW_2, TW_3, TW_4
+  year             Int
+  progressNotes    String
+  evidenceFileUrl  String?
+  statusReported   RecommendationStatus
+  reportedBy       String           // User Counterpart
+  createdAt        DateTime         @default(now())
+
+  recommendation   Recommendation   @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+
+  @@map("follow_up_records")
+}
+
+model AuditLog {
+  id                    String   @id @default(uuid())
+  vendorId              String?
+  tenantId              String?
+  userId                String?
+  impersonatedByAdminId String?  // ID Administrator jika aksi melalui Impersonate
+  action                String   // SCORE_EDIT, EVIDENCE_UPLOAD, VENDOR_IMPERSONATE, STATUS_CHANGE
+  targetTable           String
+  targetId              String
+  oldValues             Json?
+  newValues             Json?
+  ipAddress             String?
+  createdAt             DateTime @default(now())
+
+  vendor                Vendor?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  user                  User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
