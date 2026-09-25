@@ -1,21 +1,35 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Building2, LogOut, Briefcase, UserCheck } from 'lucide-react';
+import { PortfolioSummary } from '@/components/vendor/PortfolioSummary';
+import { TenantManagement } from '@/components/vendor/TenantManagement';
+import { ConsultantManagement } from '@/components/vendor/ConsultantManagement';
+import { AssignmentManagement } from '@/components/vendor/AssignmentManagement';
+import { Building2, LogOut, Briefcase, Users, FileCheck, LayoutDashboard } from 'lucide-react';
+
+type VendorTab = 'portfolio' | 'tenants' | 'consultants' | 'assignments';
 
 export default function VendorDashboardPage() {
   const { user, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState<VendorTab>('portfolio');
+
+  const navItems = [
+    { id: 'portfolio' as VendorTab, label: 'Progres Portofolio', icon: LayoutDashboard },
+    { id: 'tenants' as VendorTab, label: 'Perusahaan Klien', icon: Briefcase },
+    { id: 'consultants' as VendorTab, label: 'Tim Asesor', icon: Users },
+    { id: 'assignments' as VendorTab, label: 'Penugasan Proyek', icon: FileCheck },
+  ];
 
   return (
     <ProtectedRoute allowedRoles={['VENDOR']}>
       <div className="min-h-screen bg-surface-bg flex flex-col">
-        <header className="h-16 border-b border-border-subtle bg-white px-6 flex items-center justify-between shadow-sm">
+        {/* Top Navbar */}
+        <header className="h-16 border-b border-border-subtle bg-white px-6 flex items-center justify-between shadow-sm sticky top-0 z-30">
           <div className="flex items-center space-x-3">
-            <div className="p-1.5 bg-amber-50 text-amber-600 rounded-lg">
+            <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
               <Building2 className="h-6 w-6" />
             </div>
             <div>
@@ -23,7 +37,7 @@ export default function VendorDashboardPage() {
                 Vendor Portal Asesmen
               </h1>
               <p className="text-xs text-slate-500">
-                {user?.vendor?.name || 'Lembaga Asesmen Risiko'}
+                {user?.vendor?.name || 'Lembaga Asesmen Risiko Terdaftar'}
               </p>
             </div>
           </div>
@@ -40,34 +54,36 @@ export default function VendorDashboardPage() {
           </div>
         </header>
 
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold text-slate-500 uppercase">
-                  Portofolio Tenant Klien
-                </CardTitle>
-                <Briefcase className="h-4 w-4 text-brand-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-xl font-bold text-primary-900">Perusahaan Klien Aktif</div>
-                <p className="text-xs text-slate-500 mt-1">Kelola proyek asesmen BUMN & swasta</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold text-slate-500 uppercase">
-                  Tim Konsultan Asesor
-                </CardTitle>
-                <UserCheck className="h-4 w-4 text-emerald-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-xl font-bold text-primary-900">Penugasan Asesor</div>
-                <p className="text-xs text-slate-500 mt-1">Atur penugasan & masa berlaku e-NDA</p>
-              </CardContent>
-            </Card>
+        {/* Tab Navigation */}
+        <div className="bg-white border-b border-border-subtle px-6">
+          <div className="max-w-7xl mx-auto flex space-x-1 sm:space-x-4 overflow-x-auto">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex items-center space-x-2 py-3.5 px-3 border-b-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${
+                    isActive
+                      ? 'border-amber-600 text-amber-700'
+                      : 'border-transparent text-slate-600 hover:text-primary-900 hover:border-slate-300'
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-amber-600' : 'text-slate-400'}`} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
+        </div>
+
+        {/* Content Body */}
+        <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
+          {activeTab === 'portfolio' && <PortfolioSummary />}
+          {activeTab === 'tenants' && <TenantManagement />}
+          {activeTab === 'consultants' && <ConsultantManagement />}
+          {activeTab === 'assignments' && <AssignmentManagement />}
         </main>
       </div>
     </ProtectedRoute>
