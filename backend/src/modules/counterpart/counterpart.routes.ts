@@ -9,6 +9,9 @@ import { counterpartMonitoringController } from './monitoring/monitoring.control
 const router = Router();
 
 // Alias langsung sesuai spesifikasi PRD & TODO.md
+router.get('/periods', (req, res, next) =>
+  counterpartMonitoringController.getPeriods(req, res, next)
+);
 router.get('/evidence-checklist', (req, res, next) =>
   counterpartEvidenceController.getChecklist(req, res, next)
 );

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { counterpartFollowUpService } from './followup.service';
 import { createFollowUpSchema } from './followup.schema';
 import { AppError } from '../../../middlewares/errorHandler';
+import { prisma } from '../../../config/database';
 
 export class CounterpartFollowUpController {
   async listRecommendations(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -10,9 +11,16 @@ export class CounterpartFollowUpController {
         throw new AppError(403, 'FORBIDDEN', 'Akun Counterpart harus terafiliasi dengan Tenant perusahaan.');
       }
 
-      const periodId = req.query.periodId as string;
+      let periodId = req.query.periodId as string;
       if (!periodId) {
-        throw new AppError(400, 'MISSING_PERIOD_ID', 'Parameter query periodId diperlukan.');
+        const latestPeriod = await prisma.assessmentPeriod.findFirst({
+          where: { tenantId: req.user.tenantId },
+          orderBy: { year: 'desc' },
+        });
+        if (!latestPeriod) {
+          throw new AppError(404, 'PERIOD_NOT_FOUND', 'Belum ada periode penilaian aktif untuk perusahaan Anda.');
+        }
+        periodId = latestPeriod.id;
       }
 
       const list = await counterpartFollowUpService.listRecommendations(req.user.tenantId, periodId);

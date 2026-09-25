@@ -5,6 +5,7 @@ import { presignedUrlSchema } from '../evidences/evidence.schema';
 import { s3StorageService } from '../../../utils/s3';
 import { AppError } from '../../../middlewares/errorHandler';
 import { SupplementaryCategory } from '@prisma/client';
+import { prisma } from '../../../config/database';
 
 export class CounterpartSupplementaryController {
   async listDocs(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -13,9 +14,16 @@ export class CounterpartSupplementaryController {
         throw new AppError(403, 'FORBIDDEN', 'Akun Counterpart harus terafiliasi dengan Tenant perusahaan.');
       }
 
-      const periodId = req.query.periodId as string;
+      let periodId = req.query.periodId as string;
       if (!periodId) {
-        throw new AppError(400, 'MISSING_PERIOD_ID', 'Parameter periodId diperlukan.');
+        const latestPeriod = await prisma.assessmentPeriod.findFirst({
+          where: { tenantId: req.user.tenantId },
+          orderBy: { year: 'desc' },
+        });
+        if (!latestPeriod) {
+          throw new AppError(404, 'PERIOD_NOT_FOUND', 'Belum ada periode penilaian aktif untuk perusahaan Anda.');
+        }
+        periodId = latestPeriod.id;
       }
 
       const docs = await counterpartSupplementaryService.listSupplementaryDocs(req.user.tenantId, periodId);
