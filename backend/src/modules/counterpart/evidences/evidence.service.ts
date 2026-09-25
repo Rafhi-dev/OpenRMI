@@ -4,6 +4,7 @@ import { logAuditEvent } from '../../../utils/auditLogger';
 import { validateFileType } from '../../../middlewares/fileValidator';
 import { s3StorageService } from '../../../utils/s3';
 import { CreateEvidenceInput } from './evidence.schema';
+import { addDocumentIngestionJob } from '../../ai/queue/rag.queue';
 
 export class CounterpartEvidenceService {
   /**
@@ -107,6 +108,14 @@ export class CounterpartEvidenceService {
         parameterCode: criterion.parameter.code,
         criterionLetter: criterion.letterCode,
       },
+    });
+
+    // Pemicu antrean ingestion background RAG (MinerU ekstraksi + embedding)
+    await addDocumentIngestionJob({
+      tenantId,
+      evidenceId: evidence.id,
+      fileName: evidence.fileName,
+      fileUrl: evidence.fileUrl,
     });
 
     return evidence;

@@ -10,6 +10,7 @@ import authRoutes from './modules/auth/auth.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import vendorRoutes from './modules/vendor/vendor.routes';
 import counterpartRoutes from './modules/counterpart/counterpart.routes';
+import consultantRoutes from './modules/consultant/consultant.routes';
 import { authGuard } from './middlewares/authGuard';
 import { requireRole } from './middlewares/rbacGuard';
 import { UserRole } from '@prisma/client';
@@ -89,6 +90,14 @@ app.use(
   authGuard,
   requireRole(UserRole.COUNTERPART_TEAM, UserRole.ADMINISTRATOR),
   counterpartRoutes
+);
+
+// External Consultant Workspace Routes (AI Assistance, Reviu & Skor)
+app.use(
+  '/api/v1/consultant',
+  authGuard,
+  requireRole(UserRole.EXTERNAL_CONSULTANT, UserRole.ADMINISTRATOR),
+  consultantRoutes
 );
 
 // Centralized error handling middleware
