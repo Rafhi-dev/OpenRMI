@@ -42,9 +42,12 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: 'admin@openrmi.id' },
-    update: {},
+    update: {
+      username: 'admin',
+    },
     create: {
       email: 'admin@openrmi.id',
+      username: 'admin',
       fullName: 'System Administrator Root',
       passwordHash,
       role: UserRole.ADMINISTRATOR,

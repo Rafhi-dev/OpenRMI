@@ -504,6 +504,7 @@ model User {
   tenantId        String?          // Relasi ke Tenant jika peran COUNTERPART_TEAM
   role            UserRole
   fullName        String
+  username        String?          @unique // Username unik untuk opsi login
   email           String           @unique
   passwordHash    String
   agencyName      String?          // Instansi konsultan jika konsultan eksternal
@@ -874,6 +875,12 @@ model AuditLog {
 ---
 
 ## 7. Arsitektur API (RESTful Endpoints by Role)
+
+### 7.0 Kelompok API Autentikasi & Sesi Pengguna (`/api/v1/auth/*`)
+- `POST /api/v1/auth/login` — Autentikasi pengguna menggunakan **Username ATAU Email** + kata sandi. Mengembalikan data profil dan menyimpan Access Token serta Refresh Token secara otomatis ke dalam **httpOnly Cookie** (`httpOnly: true, secure: true, sameSite: 'lax', path: '/'`) untuk proteksi maksimal terhadap serangan XSS.
+- `POST /api/v1/auth/refresh` — Membaca token penyegar dari httpOnly cookie dan merotasi Access Token baru ke dalam httpOnly cookie.
+- `GET /api/v1/auth/me` — Mengambil data profil pengguna yang sedang login berdasarkan verifikasi token sesi di httpOnly cookie atau header `Authorization: Bearer <token>`.
+- `POST /api/v1/auth/logout` — Menghapus cookie sesi httpOnly pada browser klien dan mencatat riwayat logout.
 
 ### 7.1 Kelompok API Administrator Platform (`/api/v1/admin/*`)
 - `GET /api/v1/admin/vendors` — Mengambil daftar vendor lembaga konsultan terdaftar beserta status lisensi dan kuota tenant.

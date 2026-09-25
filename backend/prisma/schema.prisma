@@ -109,6 +109,7 @@ model User {
   tenantId        String?          // Relasi ke Tenant jika peran COUNTERPART_TEAM
   role            UserRole
   fullName        String
+  username        String?          @unique // Username unik untuk opsi login
   email           String           @unique
   passwordHash    String
   agencyName      String?          // Instansi konsultan jika konsultan eksternal

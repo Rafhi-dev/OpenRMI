@@ -48,9 +48,11 @@ Dokumen ini adalah panduan kerja teknis dan pelacak kemajuan pengerjaan fitur (*
 
 ## 🔐 FASE 2: Autentikasi, Multi-Tenancy RLS & Guard Keamanan
 - [ ] Modul Autentikasi JWT (`backend/src/modules/auth/`):
-  - [ ] Login email & password hash (Argon2 / Bcrypt)
-  - [ ] Refresh token rotation
-  - [ ] Endpoint `/api/v1/auth/me` & profil pengguna
+  - [ ] Login fleksibel: Mendukung identifikasi via **Username ATAU Email** + verifikasi kata sandi (Bcrypt)
+  - [ ] Penyimpanan token aman: Access Token & Refresh Token disimpan di **httpOnly Cookie** (`Secure`, `SameSite=Lax`, anti-XSS)
+  - [ ] Refresh token rotation dengan validasi cookie httpOnly
+  - [ ] Endpoint `/api/v1/auth/me` (membaca token dari httpOnly cookie / Authorization header)
+  - [ ] Endpoint `/api/v1/auth/logout` (membersihkan httpOnly cookie)
 - [ ] Layanan Impersonasi Vendor (`backend/src/modules/auth/impersonation.service.ts`):
   - [ ] Verifikasi hak akses eksklusif `ADMINISTRATOR`
   - [ ] Penerbitan short-lived impersonation token (max 2 jam) dengan klaim `impersonated_by`
