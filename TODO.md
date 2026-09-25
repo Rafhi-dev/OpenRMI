@@ -8,8 +8,8 @@ Dokumen ini adalah panduan kerja teknis dan pelacak kemajuan pengerjaan fitur (*
 ## 📌 Status Ringkasan Proyek
 
 - **Total Fase**: 10 Fase
-- **Status Berjalan**: Fase 1 (Selesai 100%) $\rightarrow$ Siap Masuk Fase 2 (Auth, Multi-Tenancy RLS & Guard)
-- **Terakhir Diperbarui**: 25 September 2026
+- **Status Berjalan**: Fase 2 (Selesai 100%) $\rightarrow$ Siap Masuk Fase 3 (Modul Administrator Platform & Vendor Portal)
+- **Terakhir Diperbarui**: 26 September 2026
 
 ---
 
@@ -47,20 +47,21 @@ Dokumen ini adalah panduan kerja teknis dan pelacak kemajuan pengerjaan fitur (*
 ---
 
 ## 🔐 FASE 2: Autentikasi, Multi-Tenancy RLS & Guard Keamanan
-- [ ] Modul Autentikasi JWT (`backend/src/modules/auth/`):
-  - [ ] Login fleksibel: Mendukung identifikasi via **Username ATAU Email** + verifikasi kata sandi (Bcrypt)
-  - [ ] Penyimpanan token aman: Access Token & Refresh Token disimpan di **httpOnly Cookie** (`Secure`, `SameSite=Lax`, anti-XSS)
-  - [ ] Refresh token rotation dengan validasi cookie httpOnly
-  - [ ] Endpoint `/api/v1/auth/me` (membaca token dari httpOnly cookie / Authorization header)
-  - [ ] Endpoint `/api/v1/auth/logout` (membersihkan httpOnly cookie)
-- [ ] Layanan Impersonasi Vendor (`backend/src/modules/auth/impersonation.service.ts`):
-  - [ ] Verifikasi hak akses eksklusif `ADMINISTRATOR`
-  - [ ] Penerbitan short-lived impersonation token (max 2 jam) dengan klaim `impersonated_by`
-- [ ] Middleware Express.js Keamanan:
-  - [ ] `tenantContext.middleware.ts`: Menyuntikkan `current_vendor_id`, `current_tenant_id`, `current_user_id`, dan `impersonated_by_admin_id` ke sesi PostgreSQL RLS
-  - [ ] `rbacGuard.middleware.ts`: Validasi otorisasi 4 Peran (`ADMINISTRATOR`, `VENDOR`, `EXTERNAL_CONSULTANT`, `COUNTERPART_TEAM`)
-  - [ ] `rateLimiter.middleware.ts`: Token bucket via Upstash Redis
-  - [ ] `auditLogger.ts`: Dispatcher log audit transaksi otomatis (*immutable audit trail*)
+- [x] Modul Autentikasi JWT (`backend/src/modules/auth/`):
+  - [x] Login fleksibel: Mendukung identifikasi via **Username ATAU Email** + verifikasi kata sandi (Bcrypt)
+  - [x] Penyimpanan token aman: Access Token & Refresh Token disimpan di **httpOnly Cookie** (`Secure`, `SameSite=Lax`, anti-XSS)
+  - [x] Refresh token rotation dengan validasi cookie httpOnly
+  - [x] Endpoint `/api/v1/auth/me` (membaca token dari httpOnly cookie / Authorization header)
+  - [x] Endpoint `/api/v1/auth/logout` (membersihkan httpOnly cookie)
+- [x] Layanan Impersonasi Vendor (`backend/src/modules/auth/auth.service.ts`):
+  - [x] Verifikasi hak akses eksklusif `ADMINISTRATOR`
+  - [x] Penerbitan short-lived impersonation token (max 2 jam) dengan klaim `impersonated_by`
+- [x] Middleware Express.js Keamanan:
+  - [x] `tenantContext.ts`: Isolasi multi-tenant & penyuntikan session variable RLS (`current_vendor_id`, `current_tenant_id`, `current_user_id`, `impersonated_by_admin_id`)
+  - [x] `rbacGuard.ts`: Validasi otorisasi 4 Peran (`ADMINISTRATOR`, `VENDOR`, `EXTERNAL_CONSULTANT`, `COUNTERPART_TEAM`)
+  - [x] `rateLimiter.ts`: Sliding token bucket limiter & brute force protection untuk login
+  - [x] `auditLogger.ts`: Dispatcher log audit transaksi otomatis (*immutable audit trail*) ke tabel `audit_logs`
+- [x] Integration Tests Suite Fase 2 (`backend/test/auth/auth.test.ts`: 13/13 tests lulus)
 
 ---
 

@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { errorHandler } from './middlewares/errorHandler';
 import prisma from './config/database';
+import authRoutes from './modules/auth/auth.routes';
 
 dotenv.config();
 
@@ -63,6 +64,9 @@ app.get('/api/v1', (_req, res) => {
     },
   });
 });
+
+// Authentication Routes
+app.use('/api/v1/auth', authRoutes);
 
 // Centralized error handling middleware
 app.use(errorHandler);
