@@ -11,6 +11,7 @@ import { PerformanceCalculationSheet } from '@/components/consultant/Performance
 import { PriorityMatrixWorkspace } from '@/components/consultant/PriorityMatrixWorkspace';
 import { PostFgdAiModal } from '@/components/consultant/PostFgdAiModal';
 import { OfficialReportsTab } from '@/components/consultant/OfficialReportsTab';
+import { HistoricalBaselineTab } from '@/components/counterpart/HistoricalBaselineTab';
 import {
   FileCheck2,
   LogOut,
@@ -25,9 +26,10 @@ import {
   Unlock,
   AlertCircle,
   Briefcase,
+  TrendingUp,
 } from 'lucide-react';
 
-type ConsultantTab = 'evaluation' | 'performance' | 'recommendations' | 'post-fgd-ai' | 'reports';
+type ConsultantTab = 'evaluation' | 'performance' | 'recommendations' | 'post-fgd-ai' | 'historical' | 'reports';
 
 interface AssignmentOption {
   id: string;
@@ -87,6 +89,7 @@ export default function ConsultantDashboardPage() {
     { id: 'performance' as ConsultantTab, label: 'Kalkulasi Aspek Kinerja & Gating', icon: Scale },
     { id: 'recommendations' as ConsultantTab, label: 'Matriks Prioritas 2x2', icon: Grid },
     { id: 'post-fgd-ai' as ConsultantTab, label: 'Analisis AI Dokumen Pasca-FGD', icon: BrainCircuit },
+    { id: 'historical' as ConsultantTab, label: 'Baseline YoY & Survei Budaya', icon: TrendingUp },
     { id: 'reports' as ConsultantTab, label: 'Pusat Unduh Laporan Resmi & Excel', icon: FileSpreadsheet },
   ];
 
@@ -248,6 +251,13 @@ export default function ConsultantDashboardPage() {
 
               {activeTab === 'post-fgd-ai' && (
                 <PostFgdAiModal
+                  periodId={selectedPeriodId}
+                  isLocked={selectedAssignment?.period.isLocked}
+                />
+              )}
+
+              {activeTab === 'historical' && (
+                <HistoricalBaselineTab
                   periodId={selectedPeriodId}
                   isLocked={selectedAssignment?.period.isLocked}
                 />

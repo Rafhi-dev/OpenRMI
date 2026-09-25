@@ -20,6 +20,9 @@ import {
   Sparkles,
   Info,
 } from 'lucide-react';
+import { GroupedBarChartYoY } from '@/components/charts/GroupedBarChartYoY';
+import { PerceptionGapChart } from '@/components/charts/PerceptionGapChart';
+import { RiskCultureSurveyManager } from '@/components/surveys/RiskCultureSurveyManager';
 
 interface DimensionDelta {
   current: number | null;
@@ -232,21 +235,9 @@ export function HistoricalBaselineTab({ periodId, isLocked = false }: Historical
               Komparasi 5 Dimensi: Tahun Berjalan vs Tahun Lalu
             </h4>
             <p className="text-xs text-slate-500">
-              Perbandingan capaian skor per dimensi terhadap baseline tahun sebelumnya
+              Perbandingan capaian skor per dimensi terhadap baseline tahun sebelumnya (Read-Only)
             </p>
           </div>
-          {yoy && (
-            <div className="flex items-center space-x-4 text-xs font-semibold">
-              <div className="flex items-center space-x-1.5">
-                <div className="w-3 h-3 bg-emerald-600 rounded-sm" />
-                <span className="text-slate-700">Tahun Ini ({yoy.currentYear})</span>
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <div className="w-3 h-3 bg-slate-300 rounded-sm" />
-                <span className="text-slate-500">Tahun Lalu ({yoy.previousYear})</span>
-              </div>
-            </div>
-          )}
         </div>
 
         {!yoy ? (
@@ -258,102 +249,28 @@ export function HistoricalBaselineTab({ periodId, isLocked = false }: Historical
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {Object.entries(yoy.dimensionDeltas).map(([code, deltaInfo]) => {
-              const currentScore = deltaInfo.current ?? 0;
-              const prevScore = deltaInfo.previous;
-              const deltaVal = deltaInfo.delta;
-
-              return (
-                <div key={code} className="space-y-1.5 bg-slate-50/60 p-4 rounded-xl border border-slate-200">
-                  <div className="flex justify-between items-center text-xs">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        {code}
-                      </span>
-                      <span className="font-bold text-primary-900">{dimensionLabels[code] || code}</span>
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                      <span className="text-slate-500 text-[11px]">
-                        Tahun Lalu: <strong className="text-slate-700">{prevScore.toFixed(2)}</strong>
-                      </span>
-                      <span className="text-emerald-700 text-xs">
-                        Tahun Ini:{' '}
-                        <strong>
-                          {deltaInfo.current !== null ? deltaInfo.current.toFixed(2) : 'Menunggu Reviu'}
-                        </strong>
-                      </span>
-
-                      {deltaVal !== null && (
-                        <span
-                          className={`inline-flex items-center space-x-0.5 text-xs font-bold px-2 py-0.5 rounded ${
-                            deltaVal > 0
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : deltaVal < 0
-                              ? 'bg-rose-100 text-rose-800'
-                              : 'bg-slate-200 text-slate-700'
-                          }`}
-                        >
-                          {deltaVal > 0 ? (
-                            <TrendingUp className="h-3.5 w-3.5 text-emerald-700" />
-                          ) : deltaVal < 0 ? (
-                            <TrendingDown className="h-3.5 w-3.5 text-rose-700" />
-                          ) : (
-                            <Minus className="h-3.5 w-3.5 text-slate-600" />
-                          )}
-                          <span>
-                            {deltaVal > 0 ? `+${deltaVal.toFixed(2)}` : deltaVal.toFixed(2)}
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Grouped Bar Visual */}
-                  <div className="space-y-1 pt-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[10px] text-slate-400 w-16">Berjalan</span>
-                      <div className="w-full bg-slate-200/80 rounded-full h-2.5 overflow-hidden">
-                        <div
-                          className="bg-emerald-600 h-2.5 rounded-full transition-all duration-500"
-                          style={{ width: `${(currentScore / 5) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[10px] text-slate-400 w-16">Sebelumnya</span>
-                      <div className="w-full bg-slate-200/80 rounded-full h-2.5 overflow-hidden">
-                        <div
-                          className="bg-slate-400 h-2.5 rounded-full transition-all duration-500"
-                          style={{ width: `${(prevScore / 5) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <GroupedBarChartYoY
+            currentYear={yoy.currentYear}
+            previousYear={yoy.previousYear}
+            dimensionDeltas={yoy.dimensionDeltas}
+          />
         )}
       </div>
 
       {/* Perception Gap Analysis (Survei vs Asesor) */}
-      <div className="bg-white p-6 rounded-xl border border-border-subtle shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center space-x-2">
-              <h4 className="text-sm font-bold text-primary-900">
-                Analisis Kesenjangan Persepsi Budaya Risiko (Perception Gap)
-              </h4>
-              <Badge variant="outline" className="text-[10px] font-mono">
-                FR-7.6
-              </Badge>
-            </div>
-            <p className="text-xs text-slate-500">
-              Perbandingan persepsi karyawan melalui survei mandiri vs bukti faktual hasil reviu Asesor Dimensi 1
-            </p>
+      <div className="bg-white p-6 rounded-xl border border-border-subtle shadow-sm space-y-6">
+        <div>
+          <div className="flex items-center space-x-2">
+            <h4 className="text-sm font-bold text-primary-900">
+              Analisis Kesenjangan Persepsi Budaya Risiko (Perception Gap)
+            </h4>
+            <Badge variant="outline" className="text-[10px] font-mono">
+              FR-7.6
+            </Badge>
           </div>
+          <p className="text-xs text-slate-500">
+            Perbandingan persepsi karyawan melalui survei mandiri vs bukti faktual hasil reviu Asesor Dimensi 1 (Read-Only)
+          </p>
         </div>
 
         {!gapData || gapData.gapCategory === 'NOT_APPLICABLE' ? (
@@ -365,40 +282,20 @@ export function HistoricalBaselineTab({ periodId, isLocked = false }: Historical
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-              <span className="text-[11px] text-slate-500 font-semibold">Skor Reviu Asesor (D1)</span>
-              <h3 className="text-2xl font-extrabold text-primary-900">
-                {gapData.assessorD1Score ? gapData.assessorD1Score.toFixed(2) : '-'}
-              </h3>
-              <p className="text-[10px] text-slate-400">Bukti dokumen & kebijakan</p>
-            </div>
-
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-              <span className="text-[11px] text-slate-500 font-semibold">Skor Survei Karyawan</span>
-              <h3 className="text-2xl font-extrabold text-primary-900">
-                {gapData.employeeSurveyScore ? gapData.employeeSurveyScore.toFixed(2) : '-'}
-              </h3>
-              <p className="text-[10px] text-slate-400">{gapData.totalResponses} responden anonim</p>
-            </div>
-
-            <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 space-y-1">
-              <span className="text-[11px] text-emerald-800 font-semibold">Selisih Persepsi (&Delta;)</span>
-              <h3 className="text-2xl font-extrabold text-emerald-700">
-                {gapData.delta !== null ? (gapData.delta > 0 ? `+${gapData.delta.toFixed(2)}` : gapData.delta.toFixed(2)) : '-'}
-              </h3>
-              <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-200 text-emerald-900">
-                {gapData.gapCategoryLabel}
-              </span>
-            </div>
-
-            <div className="md:col-span-3 p-4 bg-blue-50/60 border border-blue-200 rounded-xl text-xs text-blue-900 leading-relaxed">
-              <span className="font-bold block mb-0.5">Interpretasi Kesenjangan:</span>
-              {gapData.interpretation}
-            </div>
-          </div>
+          <PerceptionGapChart
+            assessorD1Score={gapData.assessorD1Score}
+            employeeSurveyScore={gapData.employeeSurveyScore}
+            totalResponses={gapData.totalResponses}
+            delta={gapData.delta}
+            gapCategory={gapData.gapCategory}
+            gapCategoryLabel={gapData.gapCategoryLabel}
+            interpretation={gapData.interpretation}
+          />
         )}
       </div>
+
+      {/* Risk Culture Survey Manager (QR Code & Token Generation) */}
+      <RiskCultureSurveyManager periodId={periodId} isLocked={isLocked} />
 
       {/* Input Baseline Modal */}
       <Modal
