@@ -8,7 +8,7 @@ Dokumen ini adalah panduan kerja teknis dan pelacak kemajuan pengerjaan fitur (*
 ## 📌 Status Ringkasan Proyek
 
 - **Total Fase**: 10 Fase
-- **Status Berjalan**: Fase 2 (Selesai 100%) $\rightarrow$ Siap Masuk Fase 3 (Modul Administrator Platform & Vendor Portal)
+- **Status Berjalan**: Fase 3 Backend (Selesai 100%) $\rightarrow$ Siap Masuk Fase 4 (Modul Counterpart & R2/S3 Upload)
 - **Terakhir Diperbarui**: 26 September 2026
 
 ---
@@ -66,18 +66,20 @@ Dokumen ini adalah panduan kerja teknis dan pelacak kemajuan pengerjaan fitur (*
 ---
 
 ## 🛡️ FASE 3: Modul Administrator Platform & Vendor Portal
-- [ ] Backend API Administrator (`/api/v1/admin/*`):
-  - [ ] CRUD Akun Lembaga Vendor (`/vendors`) & alokasi kuota tenant
-  - [ ] Endpoint Impersonasi Vendor (`/vendors/:id/impersonate` & `/exit-impersonate`)
-  - [ ] Master Model Regulasi KBUMN (`/master-models`)
-  - [ ] Konfigurasi Terpusat AI (`/ai-config`: DeepSeek Flash/Pro, Thinking Mode, Jina v4)
-  - [ ] Endpoint Health Check Sistem (`/system/health`: DB, Redis, BullMQ, S3 latency)
-  - [ ] Global Audit Trail Viewer (`/audit-logs`)
-- [ ] Backend API Vendor (`/api/v1/vendor/*`):
-  - [ ] Manajemen Perusahaan Klien (`/tenants`: BUMN/Swasta di bawah portofolio vendor)
-  - [ ] Manajemen Konsultan Asesor (`/consultants`: tim penilai di bawah lembaga vendor)
-  - [ ] Engine Penugasan Proyek (`/assignments`: Konsultan $\rightarrow$ Tenant & Periode)
-  - [ ] Dashboard Portfolio Progress (`/portfolio-progress`)
+- [x] Backend API Administrator (`/api/v1/admin/*`):
+  - [x] CRUD Akun Lembaga Vendor (`/vendors`) & alokasi kuota tenant klien
+  - [x] Endpoint Impersonasi Vendor (`/vendors/:id/impersonate` & `/exit-impersonate`)
+  - [x] Master Model Regulasi KBUMN (`/master-models`): 5 Dimensi, Sub-dimensi, 42 Parameter & Kriteria Level 1 s.d. 5
+  - [x] Konfigurasi Terpusat AI (`/ai-config`: DeepSeek Flash/Pro, Thinking Mode, Jina v4)
+  - [x] Endpoint Health Check Sistem (`/system/health`: DB latency, Redis ping, S3 storage latency, Memory)
+  - [x] Pengaturan Batas File Upload Dinamis (`/system/settings`: GET / PUT batas ukuran upload 1 s.d. 500 MB)
+  - [x] Global Audit Trail Viewer (`/audit-logs`: Pagination, filter tindakan, tanggal, user, vendor)
+- [x] Backend API Vendor (`/api/v1/vendor/*`):
+  - [x] Manajemen Perusahaan Klien (`/tenants`: BUMN/Swasta di bawah portofolio vendor, validasi kuota lisensi `maxTenants`)
+  - [x] Manajemen Konsultan Asesor (`/consultants`: tim penilai di bawah lembaga vendor, password hash bcrypt)
+  - [x] Engine Penugasan Proyek (`/assignments`: Konsultan $\rightarrow$ Tenant & Periode, validasi masa berlaku & e-NDA)
+  - [x] Dashboard Macro Portfolio Progress (`/portfolio-progress`: Rekap kemajuan asesmen seluruh tenant klien vendor)
+- [x] Integration Tests Suite Fase 3 (`backend/test/admin_vendor/admin_vendor.test.ts`: 15/15 tests lulus)
 - [ ] Frontend Administrator Console:
   - [ ] Panel Navigasi Admin & System Health Check Cards
   - [ ] Form Pengaturan Global AI (Model Selector Flash/Pro, Thinking Mode switch, Temperature, Jina v4)
