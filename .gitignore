@@ -32,3 +32,8 @@ Thumbs.db
 
 # Reference materials
 *.pdf
+
+# Specification and Documentation MD files (Private)
+*.md
+!README.md
+
