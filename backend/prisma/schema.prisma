@@ -61,6 +61,15 @@ model AiConfiguration {
   @@map("ai_configurations")
 }
 
+model SystemSetting {
+  id                  String   @id @default("global_system_setting")
+  maxUploadFileSizeMb Int      @default(50) // Batas maksimum ukuran berkas upload (MB), dapat diubah oleh Administrator
+  allowedFileTypes    String   @default("pdf,docx,xlsx,jpeg,jpg,png") // Whitelist format file
+  updatedAt           DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
 model Vendor {
   id            String    @id @default(uuid())
   name          String    // Nama Lembaga/Kantor Konsultan Asesmen

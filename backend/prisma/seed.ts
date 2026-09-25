@@ -35,6 +35,18 @@ async function main() {
     },
   });
 
+  // 1.1 Seed Global System Settings (Termasuk Batas Ukuran File Upload)
+  console.log('⚙️ Seeding Global System Settings...');
+  await prisma.systemSetting.upsert({
+    where: { id: 'global_system_setting' },
+    update: {},
+    create: {
+      id: 'global_system_setting',
+      maxUploadFileSizeMb: 50,
+      allowedFileTypes: 'pdf,docx,xlsx,jpeg,jpg,png',
+    },
+  });
+
   // 2. Seed Root Administrator
   console.log('👤 Seeding Root Administrator...');
   const salt = await bcrypt.genSalt(10);

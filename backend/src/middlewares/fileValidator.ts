@@ -1,7 +1,8 @@
 import multer from 'multer';
 import path from 'path';
-import { Request } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AppError } from './errorHandler';
+import prisma from '../config/database';
 
 /**
  * Daftar ekstensi file resmi yang diizinkan untuk diunggah ke sistem OpenRMI
@@ -21,6 +22,38 @@ export const ALLOWED_MIME_TYPES = [
 
 export type AllowedExtension = (typeof ALLOWED_EXTENSIONS)[number];
 export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
+
+// Cache in-memory untuk batas ukuran upload (MB) dengan TTL 60 detik
+let cachedMaxUploadMb: number = 50;
+let lastCacheTime: number = 0;
+const CACHE_TTL_MS = 60 * 1000;
+
+export async function getMaxUploadFileSizeMb(): Promise<number> {
+  const now = Date.now();
+  if (now - lastCacheTime < CACHE_TTL_MS && cachedMaxUploadMb > 0) {
+    return cachedMaxUploadMb;
+  }
+
+  try {
+    const setting = await prisma.systemSetting.findUnique({
+      where: { id: 'global_system_setting' },
+    });
+    if (setting?.maxUploadFileSizeMb) {
+      cachedMaxUploadMb = setting.maxUploadFileSizeMb;
+      lastCacheTime = now;
+      return cachedMaxUploadMb;
+    }
+  } catch (err) {
+    console.warn('[FileValidator] Gagal membaca maxUploadFileSizeMb dari DB, menggunakan fallback 50MB:', err);
+  }
+
+  return cachedMaxUploadMb;
+}
+
+export function setMaxUploadFileSizeCache(newLimitMb: number): void {
+  cachedMaxUploadMb = newLimitMb;
+  lastCacheTime = Date.now();
+}
 
 /**
  * Validasi ekstensi dan tipe MIME file
@@ -47,10 +80,12 @@ export function validateFileType(
 // Konfigurasi Multer memory storage (buffer siap dikirim ke Cloudflare R2 / S3 Storage)
 const storage = multer.memoryStorage();
 
-export const upload = multer({
+const rawUpload = multer({
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // Maksimal 50 Megabytes per file
+    // Alokasi buffer maksimum di layer Multer (misal hingga 500MB)
+    // Pengecekan riil terhadap dynamic setting dilakukan di middleware pembungkus
+    fileSize: 500 * 1024 * 1024,
   },
   fileFilter: (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     const check = validateFileType(file.originalname, file.mimetype);
@@ -62,15 +97,56 @@ export const upload = multer({
 });
 
 /**
- * Middleware untuk single file upload
+ * Middleware untuk single file upload dengan pengecekan batas dinamis dari Admin
  */
-export const singleFileUpload = (fieldName: string) => {
-  return upload.single(fieldName);
+export const dynamicSingleFileUpload = (fieldName: string) => {
+  const multerMiddleware = rawUpload.single(fieldName);
+
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const maxMb = await getMaxUploadFileSizeMb();
+    const maxBytes = maxMb * 1024 * 1024;
+
+    // Fast reject berdasarkan content-length header
+    const contentLength = req.headers['content-length'];
+    if (contentLength && parseInt(contentLength, 10) > maxBytes + 1024 * 1024) {
+      return next(
+        new AppError(
+          400,
+          'FILE_TOO_LARGE',
+          `Ukuran unggahan melebihi batas maksimum sistem yang ditetapkan Administrator (${maxMb} MB).`
+        )
+      );
+    }
+
+    multerMiddleware(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return next(
+            new AppError(
+              400,
+              'FILE_TOO_LARGE',
+              `Ukuran berkas melebihi batas maksimum sistem (${maxMb} MB).`
+            )
+          );
+        }
+        return next(err);
+      }
+
+      // Validasi ukuran aktual file setelah diterima
+      if (req.file && req.file.size > maxBytes) {
+        return next(
+          new AppError(
+            400,
+            'FILE_TOO_LARGE',
+            `Ukuran berkas '${req.file.originalname}' (${(req.file.size / (1024 * 1024)).toFixed(2)} MB) melebihi batas maksimum yang ditetapkan Administrator (${maxMb} MB).`
+          )
+        );
+      }
+
+      next();
+    });
+  };
 };
 
-/**
- * Middleware untuk multiple file upload
- */
-export const multipleFileUpload = (fieldName: string, maxCount = 10) => {
-  return upload.array(fieldName, maxCount);
-};
+export const upload = rawUpload;
+export const singleFileUpload = dynamicSingleFileUpload;

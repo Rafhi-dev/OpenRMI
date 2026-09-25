@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import { errorHandler } from './middlewares/errorHandler';
 import prisma from './config/database';
 import authRoutes from './modules/auth/auth.routes';
+import adminSettingsRoutes from './modules/admin/settings/settings.routes';
 
 import { sanitizeInput } from './utils/sanitizer';
 
@@ -70,6 +71,9 @@ app.get('/api/v1', (_req, res) => {
 
 // Authentication Routes
 app.use('/api/v1/auth', authRoutes);
+
+// Admin System Settings Routes (termasuk batas ukuran upload file)
+app.use('/api/v1/admin/system', adminSettingsRoutes);
 
 // Centralized error handling middleware
 app.use(errorHandler);
