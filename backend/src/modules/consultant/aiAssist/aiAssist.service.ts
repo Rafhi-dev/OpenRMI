@@ -109,14 +109,36 @@ export class ConsultantAiAssistService {
       },
     });
 
+    // Map criteria details agar kompatibel dengan penamaan frontend & backend
+    const criteriaDetails = (aiResult.criteriaDetails || []).map((c) => ({
+      criterionId: c.criterionId,
+      letterCode: c.letterCode,
+      level: c.level,
+      score: c.score,
+      recommendedScore: c.score,
+      pageRef: c.pageRef,
+      pageNumber: c.pageRef,
+      quote: c.quote,
+      evidenceQuote: c.quote,
+      rationale: c.rationale,
+      reviewNarrative: c.rationale,
+      gapAnalysis:
+        c.score < 4
+          ? `Perlu penguatan bukti implementasi berkelanjutan (Halaman ${c.pageRef})`
+          : undefined,
+    }));
+
     return {
+      id: recommendation.id,
       recommendationId: recommendation.id,
       parameterCode: recommendation.parameterCode,
       parameterTitle: parameter.title,
       recommendedScore: recommendation.recommendedScore,
+      recommendedParameterScore: recommendation.recommendedScore,
       modelUsed: recommendation.modelUsed,
       thinkingProcess: recommendation.thinkingProcess,
-      criteriaDetails: recommendation.criteriaDetails,
+      criteriaDetails,
+      criteriaRecommendations: criteriaDetails,
       isApplied: recommendation.isApplied,
       relevantEvidenceChunks: relevantChunks,
       createdAt: recommendation.createdAt,
@@ -147,6 +169,13 @@ export class ConsultantAiAssistService {
     const evaluations = await prisma.$transaction(async (tx) => {
       const results = [];
       for (const item of details) {
+        const itemScore = (item as any).score || (item as any).recommendedScore || 3;
+        const itemNotes = (item as any).rationale || (item as any).reviewNarrative || null;
+        const itemPage = (item as any).pageRef || (item as any).pageNumber || 1;
+        const itemGap =
+          (item as any).gapAnalysis ||
+          (itemScore < 4 ? `Perlu penguatan bukti implementasi berkelanjutan (Halaman ${itemPage})` : null);
+
         const evaluation = await tx.criterionEvaluation.upsert({
           where: {
             tenantId_periodId_criterionId: {
@@ -156,17 +185,17 @@ export class ConsultantAiAssistService {
             },
           },
           update: {
-            score: item.score,
-            reviewNotes: item.rationale,
-            findingsGap: item.score < 4 ? `Perlu penguatan bukti implementasi berkelanjutan (Halaman ${item.pageRef})` : null,
+            score: itemScore,
+            reviewNotes: itemNotes,
+            findingsGap: itemGap,
           },
           create: {
             tenantId: period.tenantId,
             periodId: input.periodId,
             criterionId: item.criterionId,
-            score: item.score,
-            reviewNotes: item.rationale,
-            findingsGap: item.score < 4 ? `Perlu penguatan bukti implementasi berkelanjutan (Halaman ${item.pageRef})` : null,
+            score: itemScore,
+            reviewNotes: itemNotes,
+            findingsGap: itemGap,
           },
         });
         results.push(evaluation);
@@ -193,12 +222,20 @@ export class ConsultantAiAssistService {
       },
     });
 
+    // Rekalkulasi skor aspek dimensi dan skor akhir RMI periode secara real-time
+    const { consultantEvaluationService } = await import('../evaluations/evaluation.service');
+    const realtimeScores = await consultantEvaluationService.updatePeriodAspectScore(
+      period.tenantId,
+      input.periodId
+    );
+
     return {
       message: `Rekomendasi AI untuk parameter ${input.parameterCode} berhasil diterapkan (One-Click Apply).`,
       parameterCode: input.parameterCode,
       appliedScore: rec.recommendedScore,
       evaluationsCount: evaluations.length,
       evaluations,
+      realtimeScores,
     };
   }
 

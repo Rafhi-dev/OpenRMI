@@ -20,21 +20,28 @@ export interface CriterionRecommendation {
   criterionId: number;
   letterCode: string;
   level: number;
-  recommendedScore: number;
-  evidenceQuote: string;
+  recommendedScore?: number;
+  score?: number;
+  evidenceQuote?: string;
+  quote?: string;
   pageNumber?: number | string;
+  pageRef?: number | string;
   fileName?: string;
-  reviewNarrative: string;
+  reviewNarrative?: string;
+  rationale?: string;
   gapAnalysis?: string;
 }
 
 export interface AiAssistData {
   id?: string;
+  recommendationId?: string;
   parameterCode: string;
   parameterTitle: string;
-  recommendedParameterScore: number;
+  recommendedParameterScore?: number;
+  recommendedScore?: number;
   thinkingProcess?: string;
-  criteriaRecommendations: CriterionRecommendation[];
+  criteriaRecommendations?: CriterionRecommendation[];
+  criteriaDetails?: CriterionRecommendation[];
   isApplied?: boolean;
 }
 
@@ -64,9 +71,9 @@ export function AiRecommendationDrawer({
   if (!isOpen) return null;
 
   const handleApply = async () => {
-    if (!aiData?.id) {
-      // Jika recommendationId tidak tersedia, buat notifikasi
-      alert('Rekomendasi belum memiliki ID tercatat di database.');
+    const recId = aiData?.id || aiData?.recommendationId;
+    if (!recId) {
+      setApplyError('Rekomendasi belum memiliki ID tercatat di database.');
       return;
     }
 
@@ -77,7 +84,7 @@ export function AiRecommendationDrawer({
       await api.post('/consultant/ai-assist/apply', {
         periodId,
         parameterCode,
-        recommendationId: aiData.id,
+        recommendationId: recId,
         applyNotes: 'Diterapkan oleh Konsultan via One-Click Apply',
       });
 
@@ -155,7 +162,7 @@ export function AiRecommendationDrawer({
                   </span>
                   <div className="flex items-center space-x-2 mt-1">
                     <span className="text-2xl font-extrabold text-purple-900">
-                      Skor {aiData.recommendedParameterScore}
+                      Skor {aiData.recommendedParameterScore ?? aiData.recommendedScore ?? '-'}
                     </span>
                     <span className="text-xs text-purple-700">/ 5.0 (Integer Baku)</span>
                   </div>
@@ -203,69 +210,76 @@ export function AiRecommendationDrawer({
                   Rekomendasi Nilai & Kutipan Eviden Per Kriteria
                 </h4>
 
-                {(aiData.criteriaRecommendations || []).map((crit, idx) => (
-                  <div
-                    key={crit.criterionId || idx}
-                    className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-mono text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-300">
-                          Kriteria {crit.letterCode}
-                        </span>
-                        <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-                          Level {crit.level}
-                        </span>
-                      </div>
+                {(aiData.criteriaRecommendations || aiData.criteriaDetails || []).map((crit, idx) => {
+                  const critScore = crit.recommendedScore ?? crit.score ?? '-';
+                  const quoteText = crit.evidenceQuote || crit.quote;
+                  const pageRef = crit.pageNumber || crit.pageRef;
+                  const narrative = crit.reviewNarrative || crit.rationale;
 
-                      <div className="flex items-center space-x-1.5">
-                        <span className="text-xs text-slate-500 font-medium">Skor Rekomendasi:</span>
-                        <span className="text-xs font-extrabold text-purple-800 bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-300">
-                          {crit.recommendedScore}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Verbatim Quote & Page Ref */}
-                    {crit.evidenceQuote && (
-                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1">
-                        <div className="flex items-center space-x-1.5 text-[11px] font-bold text-slate-700">
-                          <Bookmark className="h-3.5 w-3.5 text-purple-600" />
-                          <span>Kutipan Bukti Verbatim:</span>
-                          {crit.pageNumber && (
-                            <span className="text-purple-700 font-bold ml-1">
-                              (Halaman {crit.pageNumber})
-                            </span>
-                          )}
-                          {crit.fileName && (
-                            <span className="text-slate-500 font-normal truncate">
-                              &bull; {crit.fileName}
-                            </span>
-                          )}
+                  return (
+                    <div
+                      key={crit.criterionId || idx}
+                      className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-mono text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-300">
+                            Kriteria {crit.letterCode}
+                          </span>
+                          <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                            Level {crit.level}
+                          </span>
                         </div>
-                        <p className="text-slate-700 italic leading-relaxed pl-5 border-l-2 border-purple-400">
-                          &quot;{crit.evidenceQuote}&quot;
-                        </p>
-                      </div>
-                    )}
 
-                    {/* Review Narrative */}
-                    {crit.reviewNarrative && (
-                      <div className="text-xs space-y-0.5">
-                        <span className="font-bold text-slate-700">Draf Catatan Reviu (Kolom J):</span>
-                        <p className="text-slate-600 leading-relaxed">{crit.reviewNarrative}</p>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="text-xs text-slate-500 font-medium">Skor Rekomendasi:</span>
+                          <span className="text-xs font-extrabold text-purple-800 bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-300">
+                            {critScore}
+                          </span>
+                        </div>
                       </div>
-                    )}
 
-                    {/* Gap Analysis */}
-                    {crit.gapAnalysis && (
-                      <div className="bg-amber-50/70 p-2.5 rounded-lg border border-amber-200 text-xs text-amber-900 leading-relaxed">
-                        <span className="font-bold text-amber-800 block mb-0.5">Celah Temuan:</span>
-                        {crit.gapAnalysis}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      {/* Verbatim Quote & Page Ref */}
+                      {quoteText && (
+                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1">
+                          <div className="flex items-center space-x-1.5 text-[11px] font-bold text-slate-700">
+                            <Bookmark className="h-3.5 w-3.5 text-purple-600" />
+                            <span>Kutipan Bukti Verbatim:</span>
+                            {pageRef && (
+                              <span className="text-purple-700 font-bold ml-1">
+                                (Halaman {pageRef})
+                              </span>
+                            )}
+                            {crit.fileName && (
+                              <span className="text-slate-500 font-normal truncate">
+                                &bull; {crit.fileName}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-slate-700 italic leading-relaxed pl-5 border-l-2 border-purple-400">
+                            &quot;{quoteText}&quot;
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Review Narrative */}
+                      {narrative && (
+                        <div className="text-xs space-y-0.5">
+                          <span className="font-bold text-slate-700">Draf Catatan Reviu (Kolom J):</span>
+                          <p className="text-slate-600 leading-relaxed">{narrative}</p>
+                        </div>
+                      )}
+
+                      {/* Gap Analysis */}
+                      {crit.gapAnalysis && (
+                        <div className="bg-amber-50/70 p-2.5 rounded-lg border border-amber-200 text-xs text-amber-900 leading-relaxed">
+                          <span className="font-bold text-amber-800 block mb-0.5">Celah Temuan:</span>
+                          {crit.gapAnalysis}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

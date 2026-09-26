@@ -814,7 +814,10 @@ export function ParameterMatrixWorkspace({ periodId, isLocked = false }: Paramet
         parameterCode={selectedParamCode}
         aiData={aiData}
         loading={loadingAi}
-        onApplySuccess={() => fetchParamDetail(selectedParamCode)}
+        onApplySuccess={() => {
+          fetchParamDetail(selectedParamCode);
+          fetchMatrix();
+        }}
       />
     </div>
   );
