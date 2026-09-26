@@ -590,7 +590,7 @@ export function EvidenceChecklistWorkspace({ periodId, isLocked = false }: Evide
                                     <span className="font-bold text-slate-700">
                                       Standar Dokumen Pembuktian (Kolom H & I):
                                     </span>
-                                    <p className="text-slate-600 mt-0.5 leading-relaxed">
+                                    <p className="text-slate-600 mt-0.5 leading-relaxed whitespace-pre-line">
                                       {crit.defaultEvidences}
                                     </p>
                                   </div>

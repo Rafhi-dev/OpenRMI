@@ -536,7 +536,7 @@ export function ParameterMatrixWorkspace({ periodId, isLocked = false }: Paramet
                           <span className="font-bold text-slate-700 block">
                             Standar Dokumen Pemenuhan (Kolom H & I):
                           </span>
-                          <p className="leading-relaxed">{crit.defaultEvidences}</p>
+                          <p className="leading-relaxed whitespace-pre-line">{crit.defaultEvidences}</p>
                         </div>
                       )}
 

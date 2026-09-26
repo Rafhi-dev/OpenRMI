@@ -5,6 +5,41 @@ import * as fs from 'fs';
 
 const prisma = new PrismaClient();
 
+/**
+ * Format dokumen yang harus disiapkan dari Kolom 8 (Nomor) dan Kolom 9 (Uraian)
+ * menjadi daftar bernomor urut terstruktur rapi (1. ... \n\n 2. ...)
+ */
+export function formatRequiredDocuments(c8: ExcelJS.CellValue, c9: ExcelJS.CellValue): { formattedDoc: string | null; docCount: number } {
+  const c8Str = c8 !== null && c8 !== undefined ? String(c8).trim() : '';
+  const c9Str = c9 !== null && c9 !== undefined ? String(c9).trim() : '';
+
+  if (!c9Str) return { formattedDoc: null, docCount: 0 };
+
+  const nums = c8Str.split(/\s+/).filter((x) => /^\d+$/.test(x));
+
+  // Jika hanya 1 nomor atau tanpa nomor
+  if (nums.length <= 1) {
+    const lines = c9Str.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
+    if (lines.length > 1) {
+      const formatted = lines.map((line, idx) => `${idx + 1}. ${line}`).join('\n\n');
+      return { formattedDoc: formatted, docCount: lines.length };
+    }
+    return { formattedDoc: `1. ${c9Str}`, docCount: 1 };
+  }
+
+  // Jika multi-dokumen (Kolom 8 berisi 2, 3, 4, 5... nomor urut dokumen)
+  let parts = c9Str.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
+  if (parts.length !== nums.length) {
+    const singleParts = c9Str.split(/\n+/).map((s) => s.trim()).filter(Boolean);
+    if (singleParts.length >= nums.length) {
+      parts = singleParts;
+    }
+  }
+
+  const formatted = parts.map((part, idx) => `${idx + 1}. ${part}`).join('\n\n');
+  return { formattedDoc: formatted, docCount: parts.length };
+}
+
 export async function seedMasterRmi(externalPrisma?: PrismaClient) {
   const db = externalPrisma || prisma;
   console.log('📖 Loading SCORE RMI.xlsx regulation workbook...');
@@ -157,7 +192,29 @@ export async function seedMasterRmi(externalPrisma?: PrismaClient) {
   console.log(`✅ 42 Parameter KBUMN berhasil di-upsert.`);
 
   // ==========================================
-  // 3. Ekstraksi 281 Kriteria & Dokumen yang Diperlukan dari Sheet 'Reviu Dokumen'
+  // 3. Bersihkan Kriteria Tidak Standar / Sisa Seed Lama (misal level != 1)
+  // ==========================================
+  console.log('🧹 Membersihkan kriteria sisa/invalid di luar standar regulasi...');
+  const invalidCriteria = await db.criterion.findMany({
+    where: { level: { not: 1 } },
+  });
+
+  if (invalidCriteria.length > 0) {
+    const invalidIds = invalidCriteria.map((c) => c.id);
+    await db.criterionEvaluation.deleteMany({
+      where: { criterionId: { in: invalidIds } },
+    });
+    await db.criterionEvidence.deleteMany({
+      where: { criterionId: { in: invalidIds } },
+    });
+    await db.criterion.deleteMany({
+      where: { id: { in: invalidIds } },
+    });
+    console.log(`🗑️ Berhasil menghapus ${invalidCriteria.length} kriteria sisa/invalid.`);
+  }
+
+  // ==========================================
+  // 4. Ekstraksi 281 Kriteria & Dokumen yang Diperlukan dari Sheet 'Reviu Dokumen'
   // ==========================================
   console.log("📑 Membaca seluruh Kriteria & Dokumen Wajib dari sheet 'Reviu Dokumen'...");
   const revSheet = workbook.getWorksheet('Reviu Dokumen');
@@ -167,6 +224,7 @@ export async function seedMasterRmi(externalPrisma?: PrismaClient) {
 
   let criteriaCount = 0;
   const paramLetterCounts = new Map<number, number>();
+  const validCriterionIds: number[] = [];
 
   for (let r = 3; r <= revSheet.rowCount; r++) {
     const row = revSheet.getRow(r);
@@ -182,44 +240,64 @@ export async function seedMasterRmi(externalPrisma?: PrismaClient) {
     const paramDbId = paramDbIdMap.get(paramNum);
     if (!paramDbId) continue;
 
-    // Normalisasi letterCode: jika huruf duplikat dalam 1 parameter (misal P42 baris 283 tertulis 'f'),
-    // gunakan urutan alfabet yang benar (a, b, c, d, e, f, g, h...)
+    // Normalisasi letterCode berurutan: a, b, c, d, e, f, g, h, i, j, k
     const count = paramLetterCounts.get(paramNum) || 0;
     const sequentialLetter = String.fromCharCode(97 + count); // 97 = 'a'
-    const rawLetter = String(lVal).trim().toLowerCase();
-    const finalLetter = rawLetter === sequentialLetter ? rawLetter : sequentialLetter;
     paramLetterCounts.set(paramNum, count + 1);
 
-    const statement = String(sVal).trim();
-    const defaultEvidences = docVal ? String(docVal).trim() : null;
-    const guidanceNotes = docNumVal
-      ? `Standar Dokumen Pemenuhan (No. 1 s.d. ${String(docNumVal).trim().split('\n').pop() || '1'})`
-      : 'Dokumen bukti dukung resmi perusahaan';
+    const statement = String(sVal).replace(/\r\n/g, '\n').trim();
+    const { formattedDoc, docCount } = formatRequiredDocuments(docNumVal, docVal);
+    const guidanceNotes =
+      docCount > 1
+        ? `Standar Pemenuhan: Dokumen No. 1 s.d. ${docCount} (SCORE RMI Kolom H-I)`
+        : 'Standar Pemenuhan: Dokumen No. 1 (SCORE RMI Kolom H-I)';
 
-    await db.criterion.upsert({
+    const criterion = await db.criterion.upsert({
       where: {
         parameterId_letterCode_level: {
           parameterId: paramDbId,
-          letterCode: finalLetter,
+          letterCode: sequentialLetter,
           level: 1,
         },
       },
       update: {
         statement,
         guidanceNotes,
-        defaultEvidences,
+        defaultEvidences: formattedDoc,
       },
       create: {
         parameterId: paramDbId,
-        letterCode: finalLetter,
+        letterCode: sequentialLetter,
         level: 1,
         statement,
         guidanceNotes,
-        defaultEvidences,
+        defaultEvidences: formattedDoc,
       },
     });
 
+    validCriterionIds.push(criterion.id);
     criteriaCount++;
+  }
+
+  // Hapus semua kriteria yang tidak termasuk dalam 281 kriteria resmi SCORE RMI.xlsx
+  const extraCriteria = await db.criterion.findMany({
+    where: {
+      id: { notIn: validCriterionIds },
+    },
+  });
+
+  if (extraCriteria.length > 0) {
+    const extraIds = extraCriteria.map((c) => c.id);
+    await db.criterionEvaluation.deleteMany({
+      where: { criterionId: { in: extraIds } },
+    });
+    await db.criterionEvidence.deleteMany({
+      where: { criterionId: { in: extraIds } },
+    });
+    await db.criterion.deleteMany({
+      where: { id: { in: extraIds } },
+    });
+    console.log(`🗑️ Berhasil menghapus ${extraCriteria.length} kriteria usang di luar master 281.`);
   }
 
   console.log(`✅ Berhasil meng-upsert ${criteriaCount} Kriteria Penilaian beserta Standar Dokumen Pemenuhan.`);
