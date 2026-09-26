@@ -69,9 +69,28 @@ export class ConsultantRecommendationService {
       TDD: recommendations.filter((r) => r.status === 'TDD').length,
     };
 
+    const matrix = {
+      quadrant1,
+      quadrant2,
+      quadrant3,
+    };
+
+    const summary = {
+      total: recommendations.length,
+      quadrant1Count: quadrant1.length,
+      quadrant2Count: quadrant2.length,
+      quadrant3Count: quadrant3.length,
+      shortTermCount: recommendations.filter((r) => r.horizon === 'SHORT_TERM').length,
+      longTermCount: recommendations.filter((r) => r.horizon === 'LONG_TERM').length,
+    };
+
     return {
       periodId,
       totalRecommendations: recommendations.length,
+      recommendations,
+      allRecommendations: recommendations,
+      matrix,
+      summary,
       priorityMatrix: {
         quadrant1: {
           title: 'Kuadran 1: Quick Wins (Dampak Tinggi & Mudah Diterapkan)',
@@ -90,7 +109,6 @@ export class ConsultantRecommendationService {
         },
       },
       statusSummary: statusCounts,
-      allRecommendations: recommendations,
     };
   }
 

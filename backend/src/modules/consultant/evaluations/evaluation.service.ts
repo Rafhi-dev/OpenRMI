@@ -284,6 +284,23 @@ export class ConsultantEvaluationService {
         isComplete,
       },
       criteria: criteriaWithEvals,
+      // Standar flattened untuk konsumsi langsung di frontend
+      id: parameter.id,
+      code: parameter.code,
+      parameterNumber: parameter.parameterNumber,
+      title: parameter.title,
+      description: parameter.description,
+      calculatedScore: currentParameterScore,
+      subDimension: {
+        id: parameter.subDimension.id,
+        code: parameter.subDimension.code,
+        name: parameter.subDimension.name,
+        dimension: {
+          id: parameter.subDimension.dimension.id,
+          code: parameter.subDimension.dimension.code,
+          name: parameter.subDimension.dimension.name,
+        },
+      },
     };
   }
 

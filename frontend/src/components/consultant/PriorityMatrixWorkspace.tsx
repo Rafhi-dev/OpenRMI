@@ -195,9 +195,9 @@ export function PriorityMatrixWorkspace({ periodId, isLocked = false }: Priority
     return <div className="py-20 text-center text-xs text-slate-400">Memuat matriks rekomendasi 2x2...</div>;
   }
 
-  const q1 = data?.matrix.quadrant1 || [];
-  const q2 = data?.matrix.quadrant2 || [];
-  const q3 = data?.matrix.quadrant3 || [];
+  const q1: RecommendationItem[] = data?.matrix?.quadrant1 || (data as any)?.priorityMatrix?.quadrant1?.items || [];
+  const q2: RecommendationItem[] = data?.matrix?.quadrant2 || (data as any)?.priorityMatrix?.quadrant2?.items || [];
+  const q3: RecommendationItem[] = data?.matrix?.quadrant3 || (data as any)?.priorityMatrix?.quadrant3?.items || [];
 
   return (
     <div className="space-y-6">

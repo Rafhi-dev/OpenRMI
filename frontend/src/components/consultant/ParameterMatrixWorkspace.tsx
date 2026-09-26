@@ -168,7 +168,38 @@ export function ParameterMatrixWorkspace({ periodId, isLocked = false }: Paramet
         `/consultant/evaluations/parameter/${paramCode}?periodId=${periodId}`
       );
       if (res.data?.success) {
-        const detail: ParameterDetail = res.data.data;
+        const raw = res.data.data;
+        const p = raw.parameter || raw;
+        const criteria = raw.criteria || p.criteria || [];
+
+        const dimName =
+          typeof p.dimension === 'string'
+            ? p.dimension
+            : p.subDimension?.dimension?.name || p.dimension?.name || '';
+        const subDimName =
+          typeof p.subDimension === 'string'
+            ? p.subDimension
+            : p.subDimension?.name || '';
+
+        const detail: ParameterDetail = {
+          id: p.id,
+          code: p.code,
+          parameterNumber: p.parameterNumber,
+          title: p.title,
+          subDimension: {
+            id: p.subDimension?.id || 0,
+            code: p.subDimension?.code || '',
+            name: subDimName,
+            dimension: {
+              id: p.subDimension?.dimension?.id || 0,
+              code: p.subDimension?.dimension?.code || '',
+              name: dimName,
+            },
+          },
+          criteria,
+          calculatedScore: p.currentScore ?? p.calculatedScore ?? undefined,
+        };
+
         setParamDetail(detail);
 
         // Populate initial form state from existing evaluations
@@ -438,7 +469,8 @@ export function ParameterMatrixWorkspace({ periodId, isLocked = false }: Paramet
                     {paramDetail.code}
                   </span>
                   <span className="text-[11px] text-slate-500 font-semibold truncate">
-                    {paramDetail.subDimension.dimension.name} &bull; {paramDetail.subDimension.name}
+                    {paramDetail.subDimension?.dimension?.name || 'Dimensi'} &bull;{' '}
+                    {paramDetail.subDimension?.name || 'Sub-Dimensi'}
                   </span>
                 </div>
                 <h3 className="text-base font-extrabold text-primary-900">{paramDetail.title}</h3>
