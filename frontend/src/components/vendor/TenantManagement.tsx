@@ -38,7 +38,9 @@ export function TenantManagement() {
     try {
       const res = await api.get('/vendor/tenants');
       if (res.data?.success) {
-        setTenants(res.data.data);
+        const raw = res.data.data;
+        const tenantList = Array.isArray(raw) ? raw : (raw?.tenants || []);
+        setTenants(tenantList);
       }
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Gagal memuat daftar tenant.');

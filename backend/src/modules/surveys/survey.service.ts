@@ -455,6 +455,14 @@ export class RiskCultureSurveyService {
         gapCategoryLabel,
         interpretation,
       },
+      // Standar flattened untuk kemudahan konsumsi langsung di frontend
+      assessorD1Score,
+      employeeSurveyScore,
+      totalResponses,
+      delta,
+      gapCategory,
+      gapCategoryLabel,
+      interpretation,
     };
   }
 }

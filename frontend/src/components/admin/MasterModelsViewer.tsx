@@ -67,8 +67,11 @@ export function MasterModelsViewer() {
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {dimensions.map((dim) => {
-          const totalParams = dim.subDimensions.reduce((acc, sd) => acc + sd.parameters.length, 0);
+        {(dimensions || []).map((dim) => {
+          const totalParams = (dim.subDimensions || []).reduce(
+            (acc, sd) => acc + (sd.parameters || []).length,
+            0
+          );
 
           return (
             <Card key={dim.id} className="border-border-subtle">
@@ -84,7 +87,7 @@ export function MasterModelsViewer() {
                 </span>
               </CardHeader>
               <CardContent className="p-4 space-y-3">
-                {dim.subDimensions.map((sd) => (
+                {(dim.subDimensions || []).map((sd) => (
                   <div key={sd.id} className="p-3 rounded-lg border border-border-subtle/80 bg-white space-y-2">
                     <div className="flex items-center space-x-2 text-xs font-semibold text-slate-700">
                       <ChevronRight className="h-3.5 w-3.5 text-brand-blue-600" />
@@ -92,7 +95,7 @@ export function MasterModelsViewer() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-5 pt-1">
-                      {sd.parameters.map((param) => (
+                      {(sd.parameters || []).map((param) => (
                         <div
                           key={param.id}
                           className="flex items-start space-x-2 p-2 rounded bg-surface-bg text-xs text-primary-900"

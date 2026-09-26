@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Briefcase, Users, FileCheck, CheckCircle2, Clock } from 'lucide-react';
+import { formatRmiScore } from '@/lib/utils';
 
 interface PortfolioData {
   macroSummary: {
@@ -183,13 +184,13 @@ export function PortfolioSummary() {
                           {tp.leadConsultant || '-'}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          {tp.currentPeriod?.finalRmiScore ? (
+                          {tp.currentPeriod?.finalRmiScore != null ? (
                             <div>
                               <span className="font-bold text-sm text-brand-blue-600">
-                                {tp.currentPeriod.finalRmiScore.toFixed(2)}
+                                {formatRmiScore(tp.currentPeriod.finalRmiScore)}
                               </span>
                               <span className="block text-[10px] text-slate-400 font-medium">
-                                {tp.currentPeriod.maturityPhase}
+                                {tp.currentPeriod.maturityPhase || '-'}
                               </span>
                             </div>
                           ) : (

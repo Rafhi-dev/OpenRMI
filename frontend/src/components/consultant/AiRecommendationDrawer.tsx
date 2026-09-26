@@ -203,7 +203,7 @@ export function AiRecommendationDrawer({
                   Rekomendasi Nilai & Kutipan Eviden Per Kriteria
                 </h4>
 
-                {aiData.criteriaRecommendations.map((crit, idx) => (
+                {(aiData.criteriaRecommendations || []).map((crit, idx) => (
                   <div
                     key={crit.criterionId || idx}
                     className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs space-y-3"

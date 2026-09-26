@@ -261,8 +261,8 @@ export function ParameterMatrixWorkspace({ periodId, isLocked = false }: Paramet
 
   // Live Weakest-Link Score Calculation
   const liveParameterScore = useMemo(() => {
-    if (!paramDetail || paramDetail.criteria.length === 0) return 1;
-    const scores = paramDetail.criteria.map((c) => evalForm[c.id]?.score || 1);
+    if (!paramDetail || !paramDetail.criteria || paramDetail.criteria.length === 0) return 1;
+    const scores = (paramDetail.criteria || []).map((c) => evalForm[c.id]?.score || 1);
     return Math.min(...scores);
   }, [paramDetail, evalForm]);
 
@@ -303,7 +303,7 @@ export function ParameterMatrixWorkspace({ periodId, isLocked = false }: Paramet
     setSaveSuccessMsg(null);
 
     try {
-      const evaluationsPayload = paramDetail.criteria.map((crit) => {
+      const evaluationsPayload = (paramDetail.criteria || []).map((crit) => {
         const f = evalForm[crit.id] || { score: crit.level };
         return {
           criterionId: crit.id,
@@ -482,7 +482,7 @@ export function ParameterMatrixWorkspace({ periodId, isLocked = false }: Paramet
 
               {/* Criteria Evaluation List */}
               <div className="space-y-4">
-                {paramDetail.criteria.map((crit) => {
+                {(paramDetail.criteria || []).map((crit) => {
                   const form = evalForm[crit.id] || { score: crit.level };
                   const currentScore = form.score;
 

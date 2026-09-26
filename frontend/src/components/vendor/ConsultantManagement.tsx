@@ -41,7 +41,9 @@ export function ConsultantManagement() {
     try {
       const res = await api.get('/vendor/consultants');
       if (res.data?.success) {
-        setConsultants(res.data.data);
+        const raw = res.data.data;
+        const consultantList = Array.isArray(raw) ? raw : (raw?.consultants || []);
+        setConsultants(consultantList);
       }
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Gagal memuat tim konsultan.');

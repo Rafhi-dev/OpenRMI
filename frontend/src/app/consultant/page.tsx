@@ -67,7 +67,7 @@ export default function ConsultantDashboardPage() {
       if (res.data?.success && Array.isArray(res.data.data)) {
         setAssignments(res.data.data);
         if (res.data.data.length > 0 && !selectedPeriodId) {
-          setSelectedPeriodId(res.data.data[0].period.id);
+          setSelectedPeriodId(res.data.data[0].period?.id || '');
         }
       }
     } catch (err) {
@@ -82,7 +82,7 @@ export default function ConsultantDashboardPage() {
   }, []);
 
   const selectedAssignment =
-    assignments.find((a) => a.period.id === selectedPeriodId) || assignments[0];
+    assignments.find((a) => a.period?.id === selectedPeriodId) || assignments[0];
 
   const navItems = [
     { id: 'evaluation' as ConsultantTab, label: 'Workspace Evaluasi Split-Screen', icon: FileCheck2 },

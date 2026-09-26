@@ -31,6 +31,13 @@ export function GroupedBarChartYoY({
 
   const dimensionKeys = ['D1', 'D2', 'D3', 'D4', 'D5'];
 
+  const formatScore = (val: number | null | undefined, fallback = 'Draf') => {
+    if (val === null || val === undefined || isNaN(Number(val))) return fallback;
+    return Number(val).toFixed(2);
+  };
+
+  const deltas = dimensionDeltas || {};
+
   return (
     <div className="space-y-4">
       {/* Legend */}
@@ -48,14 +55,14 @@ export function GroupedBarChartYoY({
       {/* Grouped Bars */}
       <div className="space-y-4 pt-1">
         {dimensionKeys.map((code) => {
-          const item = dimensionDeltas[code] || {
+          const item = deltas[code] || {
             current: null,
             previous: 0,
             delta: null,
             trend: 'STAGNANT',
           };
           const currentVal = item.current ?? 0;
-          const previousVal = item.previous;
+          const previousVal = item.previous ?? 0;
           const delta = item.delta;
 
           const currentPct = Math.min(100, Math.max(0, (currentVal / 5) * 100));
@@ -73,31 +80,34 @@ export function GroupedBarChartYoY({
 
                 <div className="flex items-center space-x-3 text-xs">
                   <span className="text-slate-500 text-[11px]">
-                    Lalu: <strong className="text-slate-700">{previousVal.toFixed(2)}</strong>
+                    Lalu: <strong className="text-slate-700">{formatScore(previousVal, '0.00')}</strong>
                   </span>
                   <span className="text-emerald-700 text-xs">
-                    Kini:{' '}
-                    <strong>{item.current !== null ? item.current.toFixed(2) : 'Draf'}</strong>
+                    Kini: <strong>{formatScore(item.current, 'Draf')}</strong>
                   </span>
 
-                  {delta !== null && (
+                  {delta !== null && delta !== undefined && !isNaN(Number(delta)) && (
                     <span
                       className={`inline-flex items-center space-x-0.5 text-[11px] font-bold px-2 py-0.5 rounded ${
-                        delta > 0
+                        Number(delta) > 0
                           ? 'bg-emerald-100 text-emerald-800'
-                          : delta < 0
+                          : Number(delta) < 0
                           ? 'bg-rose-100 text-rose-800'
                           : 'bg-slate-200 text-slate-700'
                       }`}
                     >
-                      {delta > 0 ? (
+                      {Number(delta) > 0 ? (
                         <TrendingUp className="h-3 w-3 text-emerald-700" />
-                      ) : delta < 0 ? (
+                      ) : Number(delta) < 0 ? (
                         <TrendingDown className="h-3 w-3 text-rose-700" />
                       ) : (
                         <Minus className="h-3 w-3 text-slate-600" />
                       )}
-                      <span>{delta > 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2)}</span>
+                      <span>
+                        {Number(delta) > 0
+                          ? `+${Number(delta).toFixed(2)}`
+                          : Number(delta).toFixed(2)}
+                      </span>
                     </span>
                   )}
                 </div>

@@ -238,7 +238,7 @@ export function OfficialReportsTab({ periodId }: OfficialReportsTabProps) {
         </h4>
 
         <div className="divide-y divide-border-subtle border border-border-subtle rounded-xl overflow-hidden text-xs">
-          {data.dimensions.map((dim) => (
+          {(data.dimensions || []).map((dim) => (
             <div key={dim.id} className="p-4 flex items-center justify-between hover:bg-slate-50/50">
               <div className="space-y-0.5">
                 <div className="flex items-center space-x-2">
@@ -252,7 +252,9 @@ export function OfficialReportsTab({ periodId }: OfficialReportsTabProps) {
 
               <div className="text-right">
                 <span className="text-base font-extrabold text-primary-900">
-                  {dim.score !== null ? dim.score.toFixed(2) : '-'}
+                  {dim.score !== null && dim.score !== undefined && !isNaN(Number(dim.score))
+                    ? Number(dim.score).toFixed(2)
+                    : '-'}
                 </span>
                 <span className="text-[11px] text-slate-400 block">/ 5.00</span>
               </div>

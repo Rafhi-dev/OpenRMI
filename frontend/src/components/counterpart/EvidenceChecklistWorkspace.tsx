@@ -158,7 +158,7 @@ export function EvidenceChecklistWorkspace({ periodId, isLocked = false }: Evide
         const query = searchQuery.toLowerCase();
         const matchesCode = param.parameterCode.toLowerCase().includes(query);
         const matchesTitle = param.title.toLowerCase().includes(query);
-        const matchesCriterion = param.criteria.some((c) =>
+        const matchesCriterion = (param.criteria || []).some((c) =>
           c.statement.toLowerCase().includes(query) || (c.defaultEvidences && c.defaultEvidences.toLowerCase().includes(query))
         );
         if (!matchesCode && !matchesTitle && !matchesCriterion) return false;
@@ -540,8 +540,9 @@ export function EvidenceChecklistWorkspace({ periodId, isLocked = false }: Evide
                 {isExpanded && (
                   <div className="px-6 pb-6 pt-2 border-t border-slate-100 bg-slate-50/40 space-y-4">
                     <div className="space-y-4">
-                      {param.criteria.map((crit) => {
-                        const hasEvidences = crit.evidences && crit.evidences.length > 0;
+                      {(param.criteria || []).map((crit) => {
+                        const evidencesList = crit.evidences || [];
+                        const hasEvidences = evidencesList.length > 0;
                         return (
                           <div
                             key={crit.criterionId}
@@ -610,10 +611,10 @@ export function EvidenceChecklistWorkspace({ periodId, isLocked = false }: Evide
                             {/* List of Uploaded Evidence Documents */}
                             <div className="space-y-2">
                               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                                Dokumen Bukti Terunggah ({crit.evidences.length})
+                                Dokumen Bukti Terunggah ({evidencesList.length})
                               </span>
 
-                              {crit.evidences.length === 0 ? (
+                              {evidencesList.length === 0 ? (
                                 <div className="p-3 bg-amber-50/50 border border-dashed border-amber-200 rounded-lg text-[11px] text-amber-800 flex items-center space-x-2">
                                   <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
                                   <span>
@@ -623,7 +624,7 @@ export function EvidenceChecklistWorkspace({ periodId, isLocked = false }: Evide
                                 </div>
                               ) : (
                                 <div className="divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden bg-white">
-                                  {crit.evidences.map((evi) => (
+                                  {evidencesList.map((evi) => (
                                     <div
                                       key={evi.id}
                                       className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50/60 transition-colors"

@@ -5,8 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatRmiScore(score: number | null | undefined): string {
-  if (score === null || score === undefined || isNaN(score)) return '-';
+export function formatRmiScore(score: number | string | null | undefined): string {
+  if (score === null || score === undefined || score === '' || isNaN(Number(score))) return '-';
   return Number(score).toFixed(2);
 }
 

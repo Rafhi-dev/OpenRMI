@@ -59,11 +59,11 @@ interface HistoricalData {
 
 interface PerceptionGapData {
   assessorD1Score: number | null;
-  assessorP1Score: number | null;
+  assessorP1Score?: number | null;
   employeeSurveyScore: number | null;
   totalResponses: number;
   delta: number | null;
-  gapCategory: 'OVERCONFIDENT' | 'ALIGNED' | 'NEEDS_EDUCATION' | 'NOT_APPLICABLE';
+  gapCategory: 'OVERCONFIDENT' | 'ALIGNED' | 'NEEDS_EDUCATION' | 'NOT_APPLICABLE' | string;
   gapCategoryLabel: string;
   interpretation: string;
 }
@@ -128,7 +128,19 @@ export function HistoricalBaselineTab({ periodId, isLocked = false }: Historical
       }
 
       if (resGap.status === 'fulfilled' && resGap.value.data?.success) {
-        setGapData(resGap.value.data.data);
+        const rawGap = resGap.value.data.data;
+        const comp = rawGap.comparison || rawGap;
+        const status = rawGap.surveyStatus || rawGap;
+        setGapData({
+          assessorD1Score: comp.assessorD1Score ?? rawGap.assessorScores?.dimension1Score ?? null,
+          assessorP1Score: comp.assessorP1Score ?? rawGap.assessorScores?.parameter1Score ?? null,
+          employeeSurveyScore: comp.employeeSurveyScore ?? status.employeeSurveyScore ?? null,
+          totalResponses: status.totalResponses ?? 0,
+          delta: comp.delta ?? null,
+          gapCategory: comp.gapCategory || 'NOT_APPLICABLE',
+          gapCategoryLabel: comp.gapCategoryLabel || 'Belum Cukup Data',
+          interpretation: comp.interpretation || 'Memerlukan data evaluasi asesor D1 dan minimal pengisian survei budaya risiko.',
+        });
       }
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Gagal memuat perbandingan data historis.');
@@ -273,7 +285,7 @@ export function HistoricalBaselineTab({ periodId, isLocked = false }: Historical
           </p>
         </div>
 
-        {!gapData || gapData.gapCategory === 'NOT_APPLICABLE' ? (
+        {!gapData || gapData.gapCategory === 'NOT_APPLICABLE' || gapData.assessorD1Score === null || gapData.employeeSurveyScore === null ? (
           <div className="p-6 bg-slate-50 rounded-xl border border-slate-200 text-center space-y-2">
             <Users className="h-7 w-7 text-slate-400 mx-auto" />
             <p className="text-xs font-bold text-primary-900">Data Kesenjangan Belum Mencukupi</p>

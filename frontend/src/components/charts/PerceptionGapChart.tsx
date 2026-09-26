@@ -8,7 +8,7 @@ interface PerceptionGapChartProps {
   employeeSurveyScore: number | null;
   totalResponses: number;
   delta: number | null;
-  gapCategory: 'OVERCONFIDENT' | 'ALIGNED' | 'NEEDS_EDUCATION' | 'NOT_APPLICABLE';
+  gapCategory: 'OVERCONFIDENT' | 'ALIGNED' | 'NEEDS_EDUCATION' | 'NOT_APPLICABLE' | string;
   gapCategoryLabel: string;
   interpretation: string;
 }
@@ -41,6 +41,11 @@ export function PerceptionGapChart({
     }
   };
 
+  const formatScore = (val: number | null | undefined) => {
+    if (val === null || val === undefined || isNaN(Number(val))) return '-';
+    return Number(val).toFixed(2);
+  };
+
   return (
     <div className="space-y-6">
       {/* Side-by-Side Visual Comparison Cards */}
@@ -54,7 +59,7 @@ export function PerceptionGapChart({
 
           <div className="flex items-baseline space-x-2">
             <span className="text-3xl font-extrabold text-primary-900">
-              {assessorD1Score !== null ? assessorD1Score.toFixed(2) : '-'}
+              {formatScore(assessorD1Score)}
             </span>
             <span className="text-xs text-slate-400">/ 5.00</span>
           </div>
@@ -80,7 +85,7 @@ export function PerceptionGapChart({
 
           <div className="flex items-baseline space-x-2">
             <span className="text-3xl font-extrabold text-emerald-700">
-              {employeeSurveyScore !== null ? employeeSurveyScore.toFixed(2) : '-'}
+              {formatScore(employeeSurveyScore)}
             </span>
             <span className="text-xs text-slate-400">/ 5.00</span>
           </div>
@@ -110,7 +115,11 @@ export function PerceptionGapChart({
 
           <div className="flex items-center space-x-2">
             <span className="text-sm font-extrabold text-primary-900">
-              {delta !== null ? (delta > 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2)) : '-'}
+              {delta !== null && delta !== undefined
+                ? Number(delta) > 0
+                  ? `+${Number(delta).toFixed(2)}`
+                  : Number(delta).toFixed(2)
+                : '-'}
             </span>
             <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${getCategoryBadgeClass()}`}>
               {gapCategoryLabel}

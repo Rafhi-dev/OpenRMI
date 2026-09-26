@@ -346,7 +346,7 @@ export function LiveMonitoringTab({ periodId, onStatusChange }: LiveMonitoringTa
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle">
-              {data.dimensionProgress.map((dim) => (
+              {(data.dimensionProgress || []).map((dim) => (
                 <tr key={dim.dimensionId} className="hover:bg-slate-50/70 transition-colors">
                   <td className="px-4 py-3.5 font-bold text-primary-900">
                     <span className="font-mono text-emerald-700 mr-2">{dim.dimensionCode}</span>
@@ -367,9 +367,9 @@ export function LiveMonitoringTab({ periodId, onStatusChange }: LiveMonitoringTa
                     </div>
                   </td>
                   <td className="px-4 py-3.5 text-right font-bold text-primary-900">
-                    {dim.averageDraftScore > 0 ? (
+                    {Number(dim.averageDraftScore || 0) > 0 ? (
                       <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
-                        {dim.averageDraftScore.toFixed(2)}
+                        {Number(dim.averageDraftScore).toFixed(2)}
                       </span>
                     ) : (
                       <span className="text-slate-400 font-normal">Belum ada skor</span>
@@ -392,7 +392,7 @@ export function LiveMonitoringTab({ periodId, onStatusChange }: LiveMonitoringTa
           </p>
         </div>
 
-        {data.findingsAndGaps.length === 0 ? (
+        {(data.findingsAndGaps || []).length === 0 ? (
           <div className="p-8 text-center bg-slate-50 rounded-xl border border-slate-200 space-y-2">
             <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto" />
             <p className="text-xs font-bold text-primary-900">Belum Ada Celah Temuan Tercatat</p>
@@ -402,7 +402,7 @@ export function LiveMonitoringTab({ periodId, onStatusChange }: LiveMonitoringTa
           </div>
         ) : (
           <div className="divide-y divide-border-subtle border border-border-subtle rounded-xl overflow-hidden">
-            {data.findingsAndGaps.map((item, idx) => (
+            {(data.findingsAndGaps || []).map((item, idx) => (
               <div key={idx} className="p-4 hover:bg-slate-50/50 transition-colors space-y-2">
                 <div className="flex items-center space-x-2">
                   <span className="font-mono text-xs font-bold bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-200">
