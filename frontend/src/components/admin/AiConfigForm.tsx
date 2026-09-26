@@ -8,13 +8,16 @@ import { Input } from '@/components/ui/input';
 import { Cpu, Sparkles, Check, AlertCircle } from 'lucide-react';
 
 interface AiConfigData {
-  deepseekModel: string;
+  deepseekModel?: string;
+  activeLlmModel?: string;
   thinkingMode: boolean;
-  jinaModel: string;
+  jinaModel?: string;
+  activeEmbeddingModel?: string;
   temperature: number;
   maxTokens: number;
   deepseekApiKeyMasked?: string;
   jinaApiKeyMasked?: string;
+  mineruApiKeyMasked?: string;
 }
 
 export function AiConfigForm() {
@@ -27,6 +30,7 @@ export function AiConfigForm() {
   });
   const [deepseekApiKey, setDeepseekApiKey] = useState('');
   const [jinaApiKey, setJinaApiKey] = useState('');
+  const [mineruApiKey, setMineruApiKey] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -37,7 +41,12 @@ export function AiConfigForm() {
     try {
       const res = await api.get('/admin/ai-config');
       if (res.data?.success) {
-        setConfig(res.data.data);
+        const d = res.data.data;
+        setConfig({
+          ...d,
+          deepseekModel: d.activeLlmModel || d.deepseekModel || 'deepseek-flash',
+          jinaModel: d.activeEmbeddingModel || d.jinaModel || 'jina-embeddings-v4',
+        });
       }
     } catch (err: any) {
       setErrorMsg(err.response?.data?.error?.message || 'Gagal mengambil konfigurasi AI.');
@@ -58,9 +67,9 @@ export function AiConfigForm() {
 
     try {
       const payload: any = {
-        deepseekModel: config.deepseekModel,
+        activeLlmModel: config.deepseekModel,
         thinkingMode: config.thinkingMode,
-        jinaModel: config.jinaModel,
+        activeEmbeddingModel: config.jinaModel,
         temperature: Number(config.temperature),
         maxTokens: Number(config.maxTokens),
       };
@@ -71,12 +80,16 @@ export function AiConfigForm() {
       if (jinaApiKey.trim()) {
         payload.jinaApiKey = jinaApiKey.trim();
       }
+      if (mineruApiKey.trim()) {
+        payload.mineruApiKey = mineruApiKey.trim();
+      }
 
       const res = await api.put('/admin/ai-config', payload);
       if (res.data?.success) {
         setSuccessMsg('Konfigurasi kecerdasan buatan (AI) global berhasil diperbarui.');
         setDeepseekApiKey('');
         setJinaApiKey('');
+        setMineruApiKey('');
         fetchConfig();
       }
     } catch (err: any) {
@@ -203,11 +216,19 @@ export function AiConfigForm() {
               helperText="Kosongkan jika tidak ingin mengubah kunci API saat ini."
             />
             <Input
-              label="Jina AI API Key"
+              label="Jina AI API Key (Semantic Embeddings)"
               type="password"
               placeholder={config.jinaApiKeyMasked || 'jina_••••••••••••••••'}
               value={jinaApiKey}
               onChange={(e) => setJinaApiKey(e.target.value)}
+              helperText="Kosongkan jika tidak ingin mengubah kunci API saat ini."
+            />
+            <Input
+              label="MinerU API Key (PDF & Table Extraction)"
+              type="password"
+              placeholder={config.mineruApiKeyMasked || 'sk-••••••••••••••••'}
+              value={mineruApiKey}
+              onChange={(e) => setMineruApiKey(e.target.value)}
               helperText="Kosongkan jika tidak ingin mengubah kunci API saat ini."
             />
           </div>
