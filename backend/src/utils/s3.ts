@@ -138,6 +138,40 @@ export class S3StorageService {
   }
 
   /**
+   * Mengambil stream berkas langsung dari Cloudflare R2 / S3 untuk preview atau unduh
+   */
+  async getFileStream(fileKey: string): Promise<{
+    stream: NodeJS.ReadableStream;
+    contentType?: string;
+    contentLength?: number;
+  }> {
+    const cleanKey = fileKey.includes('.com/') ? fileKey.split('.com/')[1] : fileKey;
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: cleanKey,
+      });
+
+      const response = await s3Client.send(command);
+      if (!response.Body) {
+        throw new AppError(404, 'FILE_NOT_FOUND', 'Berkas tidak ditemukan pada penyimpanan S3/R2.');
+      }
+
+      return {
+        stream: response.Body as NodeJS.ReadableStream,
+        contentType: response.ContentType,
+        contentLength: response.ContentLength,
+      };
+    } catch (err: any) {
+      if (err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404) {
+        throw new AppError(404, 'FILE_NOT_FOUND', `Berkas dengan key "${cleanKey}" tidak ditemukan.`);
+      }
+      throw err;
+    }
+  }
+
+  /**
    * Menghapus berkas dari Cloudflare R2 / S3
    */
   async deleteFile(fileKey: string): Promise<void> {

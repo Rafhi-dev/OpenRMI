@@ -26,6 +26,7 @@ import {
   FileCode,
   ShieldAlert,
 } from 'lucide-react';
+import { getFileUrl } from '@/lib/fileUrl';
 
 interface CriterionEvidence {
   id: string;
@@ -36,6 +37,7 @@ interface CriterionEvidence {
   effectiveDate?: string;
   sectionNotes?: string;
   createdAt: string;
+  isSupplementary?: boolean;
 }
 
 interface CriterionEvaluation {
@@ -692,7 +694,7 @@ export function ParameterMatrixWorkspace({ periodId, isLocked = false }: Paramet
                     return (
                       <div
                         key={evi.id}
-                        onClick={() => setSelectedEvidence(evi)}
+                        onClick={() => setSelectedEvidence({ ...evi, isSupplementary: false })}
                         className={`p-2.5 rounded-lg border text-xs cursor-pointer transition-all flex items-start space-x-2.5 ${
                           isSelected
                             ? 'bg-brand-blue-50/80 border-brand-blue-300 text-brand-blue-900'
@@ -732,6 +734,7 @@ export function ParameterMatrixWorkspace({ periodId, isLocked = false }: Paramet
                             fileName: doc.fileName,
                             fileUrl: doc.fileUrl,
                             createdAt: doc.createdAt,
+                            isSupplementary: true,
                           })
                         }
                         className={`p-2.5 rounded-lg border text-xs cursor-pointer transition-all flex items-start space-x-2.5 ${
@@ -757,41 +760,49 @@ export function ParameterMatrixWorkspace({ periodId, isLocked = false }: Paramet
             {/* Document Preview Area */}
             <div className="p-4 flex-1 min-h-[480px] flex flex-col bg-slate-900/5">
               {selectedEvidence ? (
-                <div className="flex-1 flex flex-col space-y-3">
-                  <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-200">
-                    <span className="font-bold text-primary-900 truncate max-w-xs">
-                      {selectedEvidence.fileName}
-                    </span>
-                    <a
-                      href={selectedEvidence.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-brand-blue-700 hover:underline flex items-center space-x-1 font-semibold"
-                    >
-                      <span>Buka Tab Baru</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  </div>
+                (() => {
+                  const previewUrl = getFileUrl(
+                    selectedEvidence,
+                    selectedEvidence.isSupplementary ? 'supplementary' : 'evidence'
+                  );
+                  const isImage = /\.(png|jpe?g|webp)$/i.test(selectedEvidence.fileName);
 
-                  {/* Embedded Viewer (iframe for PDF / image preview) */}
-                  <div className="flex-1 bg-white rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center min-h-[400px]">
-                    {selectedEvidence.fileName.toLowerCase().endsWith('.png') ||
-                    selectedEvidence.fileName.toLowerCase().endsWith('.jpg') ||
-                    selectedEvidence.fileName.toLowerCase().endsWith('.jpeg') ? (
-                      <img
-                        src={selectedEvidence.fileUrl}
-                        alt={selectedEvidence.fileName}
-                        className="max-h-[500px] w-auto object-contain p-2"
-                      />
-                    ) : (
-                      <iframe
-                        src={selectedEvidence.fileUrl}
-                        title={selectedEvidence.fileName}
-                        className="w-full h-[520px] border-0"
-                      />
-                    )}
-                  </div>
-                </div>
+                  return (
+                    <div className="flex-1 flex flex-col space-y-3">
+                      <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-200">
+                        <span className="font-bold text-primary-900 truncate max-w-xs">
+                          {selectedEvidence.fileName}
+                        </span>
+                        <a
+                          href={previewUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-brand-blue-700 hover:underline flex items-center space-x-1 font-semibold"
+                        >
+                          <span>Buka Tab Baru</span>
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
+
+                      {/* Embedded Viewer (iframe for PDF / image preview via authenticated stream proxy) */}
+                      <div className="flex-1 bg-white rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center min-h-[400px]">
+                        {isImage ? (
+                          <img
+                            src={previewUrl}
+                            alt={selectedEvidence.fileName}
+                            className="max-h-[500px] w-auto object-contain p-2"
+                          />
+                        ) : (
+                          <iframe
+                            src={previewUrl}
+                            title={selectedEvidence.fileName}
+                            className="w-full h-[520px] border-0"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center space-y-3 text-center p-8">
                   <FileText className="h-12 w-12 text-slate-300" />

@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Send,
 } from 'lucide-react';
+import { getFileUrl } from '@/lib/fileUrl';
 
 interface SupplementaryDoc {
   id: string;
@@ -193,7 +194,7 @@ export function PostFgdAiModal({ periodId, isLocked = false }: PostFgdAiModalPro
                   </div>
                   <div className="min-w-0">
                     <a
-                      href={doc.fileUrl}
+                      href={getFileUrl(doc, 'supplementary')}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-bold text-xs text-primary-900 hover:text-purple-700 hover:underline flex items-center space-x-1"

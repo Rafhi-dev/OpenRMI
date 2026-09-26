@@ -23,6 +23,7 @@ import {
   Bookmark,
   Sparkles,
 } from 'lucide-react';
+import { getFileUrl } from '@/lib/fileUrl';
 
 export interface CriterionEvidence {
   id: string;
@@ -256,39 +257,17 @@ export function EvidenceChecklistWorkspace({ periodId, isLocked = false }: Evide
     setUploadError(null);
 
     try {
-      // 1. Dapatkan Presigned Upload URL
-      const presignedRes = await api.post('/counterpart/evidences/presigned-url', {
-        fileName: fileToUpload.name,
-        mimeType: fileToUpload.type || 'application/pdf',
-        fileSizeBytes: fileToUpload.size,
-      });
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+      formData.append('criterionId', selectedCriterion.criterionId.toString());
+      if (docNumber.trim()) formData.append('docNumber', docNumber.trim());
+      if (effectiveDate) formData.append('effectiveDate', new Date(effectiveDate).toISOString());
+      if (sectionNotes.trim()) formData.append('sectionNotes', sectionNotes.trim());
 
-      const { uploadUrl, fileUrl } = presignedRes.data.data;
-
-      // 2. Upload file langsung ke Object Storage
-      try {
-        await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': fileToUpload.type || 'application/pdf',
-          },
-          body: fileToUpload,
-        });
-      } catch (uploadNetErr) {
-        // Toleransi kegagalan direct mock S3 upload di environment lokal
-        console.warn('Storage PUT network info:', uploadNetErr);
-      }
-
-      // 3. Catat metadata bukti ke database backend
-      await api.post('/counterpart/evidences', {
-        criterionId: selectedCriterion.criterionId,
-        fileName: fileToUpload.name,
-        fileUrl: fileUrl || uploadUrl.split('?')[0],
-        fileSize: fileToUpload.size,
-        mimeType: fileToUpload.type || 'application/pdf',
-        docNumber: docNumber.trim() || undefined,
-        effectiveDate: effectiveDate ? new Date(effectiveDate).toISOString() : undefined,
-        sectionNotes: sectionNotes.trim() || undefined,
+      await api.post('/counterpart/evidences/direct-upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
       setIsUploadModalOpen(false);
@@ -635,7 +614,7 @@ export function EvidenceChecklistWorkspace({ periodId, isLocked = false }: Evide
                                         </div>
                                         <div className="min-w-0">
                                           <a
-                                            href={evi.fileUrl}
+                                            href={getFileUrl(evi, 'evidence')}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-xs font-bold text-primary-900 hover:text-emerald-700 hover:underline flex items-center space-x-1"
@@ -667,7 +646,7 @@ export function EvidenceChecklistWorkspace({ periodId, isLocked = false }: Evide
 
                                       <div className="flex items-center space-x-2 self-end sm:self-center shrink-0">
                                         <a
-                                          href={evi.fileUrl}
+                                          href={getFileUrl(evi, 'evidence')}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="text-xs text-brand-blue-600 hover:underline font-medium px-2 py-1"

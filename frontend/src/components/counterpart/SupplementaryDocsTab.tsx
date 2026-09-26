@@ -20,6 +20,7 @@ import {
   Search,
   Lock,
 } from 'lucide-react';
+import { getFileUrl } from '@/lib/fileUrl';
 
 export type SupplementaryCategory = 'FGD_FOLLOW_UP' | 'INTERVIEW_CLARIFICATION' | 'AD_HOC';
 export type RagIngestionStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
@@ -156,38 +157,17 @@ export function SupplementaryDocsTab({ periodId, isLocked = false }: Supplementa
     setUploadError(null);
 
     try {
-      // 1. Ambil Presigned Upload URL
-      const presignedRes = await api.post('/counterpart/supplementary-documents/presigned-url', {
-        fileName: fileToUpload.name,
-        mimeType: fileToUpload.type || 'application/pdf',
-        fileSizeBytes: fileToUpload.size,
-      });
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+      formData.append('periodId', periodId || '');
+      formData.append('category', category);
+      if (description.trim()) formData.append('description', description.trim());
+      if (submissionNotes.trim()) formData.append('submissionNotes', submissionNotes.trim());
 
-      const { uploadUrl, fileUrl } = presignedRes.data.data;
-
-      // 2. Direct upload ke S3 / Cloudflare R2
-      try {
-        await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': fileToUpload.type || 'application/pdf',
-          },
-          body: fileToUpload,
-        });
-      } catch (netErr) {
-        console.warn('Storage PUT network info:', netErr);
-      }
-
-      // 3. Catat metadata dokumen tambahan ke backend
-      await api.post('/counterpart/supplementary-documents', {
-        periodId,
-        fileName: fileToUpload.name,
-        fileUrl: fileUrl || uploadUrl.split('?')[0],
-        fileSize: fileToUpload.size,
-        mimeType: fileToUpload.type || 'application/pdf',
-        category,
-        description: description.trim() || undefined,
-        submissionNotes: submissionNotes.trim() || undefined,
+      await api.post('/counterpart/supplementary-documents/direct-upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
       setIsUploadModalOpen(false);
@@ -404,7 +384,7 @@ export function SupplementaryDocsTab({ periodId, isLocked = false }: Supplementa
                         </div>
                         <div className="min-w-0">
                           <a
-                            href={doc.fileUrl}
+                            href={getFileUrl(doc, 'supplementary')}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-bold text-primary-900 hover:text-emerald-700 hover:underline flex items-center space-x-1"
@@ -449,7 +429,7 @@ export function SupplementaryDocsTab({ periodId, isLocked = false }: Supplementa
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end space-x-2">
                         <a
-                          href={doc.fileUrl}
+                          href={getFileUrl(doc, 'supplementary')}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-brand-blue-600 hover:underline font-medium px-2 py-1"

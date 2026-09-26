@@ -11,6 +11,11 @@ export const authGuard = (req: Request, _res: Response, next: NextFunction): voi
     token = req.headers.authorization.split(' ')[1];
   }
 
+  // 3. Fallback: baca dari query parameter token (untuk iframe preview & tab baru)
+  if (!token && typeof req.query?.token === 'string') {
+    token = req.query.token;
+  }
+
   if (!token) {
     return next(new AppError(401, 'UNAUTHORIZED', 'Autentikasi diperlukan. Silakan login terlebih dahulu.'));
   }

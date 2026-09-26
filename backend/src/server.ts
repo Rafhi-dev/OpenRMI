@@ -15,6 +15,7 @@ import historicalRoutes from './modules/historical/historical.routes';
 import surveyRoutes from './modules/surveys/survey.routes';
 import publicSurveyRoutes from './modules/surveys/publicSurvey.routes';
 import reportRoutes from './modules/reports/report.routes';
+import fileRoutes from './modules/files/file.routes';
 import { authGuard } from './middlewares/authGuard';
 import { requireRole } from './middlewares/rbacGuard';
 import { UserRole } from '@prisma/client';
@@ -27,7 +28,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Security & Utility Middlewares
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: false,
+  })
+);
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
@@ -115,6 +121,9 @@ app.use('/api/v1/public/surveys', publicSurveyRoutes);
 
 // Official Assessment Reports & Synchronizers (Excel & PDF Format 1.2.8)
 app.use('/api/v1/reports', reportRoutes);
+
+// File Streaming & Preview Routes (PDF & Image Document Viewer)
+app.use('/api/v1/files', fileRoutes);
 
 // Centralized error handling middleware
 app.use(errorHandler);
