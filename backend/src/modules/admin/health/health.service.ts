@@ -134,7 +134,26 @@ export class AdminHealthService {
       result.status = 'DOWN';
     }
 
-    return result;
+    const services = {
+      database: {
+        status: result.components.database.status === 'UP' ? 'CONNECTED' : 'ERROR',
+        latencyMs: result.components.database.latencyMs,
+      },
+      redis: {
+        status: result.components.redis.status === 'UP' ? 'CONNECTED' : 'ERROR',
+        latencyMs: result.components.redis.latencyMs,
+      },
+      storage: {
+        status: result.components.storage.status === 'UP' ? 'CONNECTED' : 'ERROR',
+        latencyMs: result.components.storage.latencyMs,
+        bucket: result.components.storage.bucket,
+      },
+    };
+
+    return {
+      ...result,
+      services,
+    };
   }
 }
 

@@ -67,84 +67,92 @@ export function SystemHealthCard() {
         </div>
       )}
 
-      {health && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Database */}
-          <Card className="border-border-subtle">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-surface-bg/50">
-              <CardTitle className="text-xs font-semibold text-slate-600 uppercase flex items-center gap-1.5">
-                <Database className="h-4 w-4 text-brand-blue-600" />
-                PostgreSQL 18 (RLS)
-              </CardTitle>
-              {health.services.database.status === 'CONNECTED' ? (
-                <span className="flex items-center text-xs font-bold text-emerald-600">
-                  <CheckCircle2 className="h-4 w-4 mr-1" /> ONLINE
-                </span>
-              ) : (
-                <span className="flex items-center text-xs font-bold text-rose-600">
-                  <XCircle className="h-4 w-4 mr-1" /> ERROR
-                </span>
-              )}
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-primary-900">
-                {health.services.database.latencyMs} ms
-              </div>
-              <p className="text-xs text-slate-500 mt-1">Latensi query database</p>
-            </CardContent>
-          </Card>
+      {health && (() => {
+        const db = health.services?.database || (health as any).components?.database || { status: 'UNKNOWN', latencyMs: 0 };
+        const redis = health.services?.redis || (health as any).components?.redis || { status: 'UNKNOWN', latencyMs: 0 };
+        const storage = health.services?.storage || (health as any).components?.storage || { status: 'UNKNOWN', latencyMs: 0, bucket: '-' };
 
-          {/* Redis */}
-          <Card className="border-border-subtle">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-surface-bg/50">
-              <CardTitle className="text-xs font-semibold text-slate-600 uppercase flex items-center gap-1.5">
-                <Server className="h-4 w-4 text-amber-600" />
-                Redis Cache & Queue
-              </CardTitle>
-              {health.services.redis.status === 'CONNECTED' ? (
-                <span className="flex items-center text-xs font-bold text-emerald-600">
-                  <CheckCircle2 className="h-4 w-4 mr-1" /> ONLINE
-                </span>
-              ) : (
-                <span className="flex items-center text-xs font-bold text-rose-600">
-                  <XCircle className="h-4 w-4 mr-1" /> ERROR
-                </span>
-              )}
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-primary-900">
-                {health.services.redis.latencyMs} ms
-              </div>
-              <p className="text-xs text-slate-500 mt-1">Latensi respon in-memory cache</p>
-            </CardContent>
-          </Card>
+        const isOnline = (status?: string) => status === 'CONNECTED' || status === 'UP';
 
-          {/* Storage */}
-          <Card className="border-border-subtle">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-surface-bg/50">
-              <CardTitle className="text-xs font-semibold text-slate-600 uppercase flex items-center gap-1.5">
-                <HardDrive className="h-4 w-4 text-indigo-600" />
-                S3 / Cloudflare R2
-              </CardTitle>
-              {health.services.storage.status === 'CONNECTED' ? (
-                <span className="flex items-center text-xs font-bold text-emerald-600">
-                  <CheckCircle2 className="h-4 w-4 mr-1" /> ONLINE
-                </span>
-              ) : (
-                <span className="flex items-center text-xs font-bold text-rose-600">
-                  <XCircle className="h-4 w-4 mr-1" /> ERROR
-                </span>
-              )}
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-primary-900">
-                {health.services.storage.latencyMs} ms
-              </div>
-              <p className="text-xs text-slate-500 mt-1">Bucket: {health.services.storage.bucket}</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Database */}
+            <Card className="border-border-subtle">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 bg-surface-bg/50">
+                <CardTitle className="text-xs font-semibold text-slate-600 uppercase flex items-center gap-1.5">
+                  <Database className="h-4 w-4 text-brand-blue-600" />
+                  PostgreSQL 18 (RLS)
+                </CardTitle>
+                {isOnline(db.status) ? (
+                  <span className="flex items-center text-xs font-bold text-emerald-600">
+                    <CheckCircle2 className="h-4 w-4 mr-1" /> ONLINE
+                  </span>
+                ) : (
+                  <span className="flex items-center text-xs font-bold text-rose-600">
+                    <XCircle className="h-4 w-4 mr-1" /> ERROR
+                  </span>
+                )}
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="text-2xl font-bold text-primary-900">
+                  {db.latencyMs ?? 0} ms
+                </div>
+                <p className="text-xs text-slate-500 mt-1">Latensi query database</p>
+              </CardContent>
+            </Card>
+
+            {/* Redis */}
+            <Card className="border-border-subtle">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 bg-surface-bg/50">
+                <CardTitle className="text-xs font-semibold text-slate-600 uppercase flex items-center gap-1.5">
+                  <Server className="h-4 w-4 text-amber-600" />
+                  Redis Cache & Queue
+                </CardTitle>
+                {isOnline(redis.status) ? (
+                  <span className="flex items-center text-xs font-bold text-emerald-600">
+                    <CheckCircle2 className="h-4 w-4 mr-1" /> ONLINE
+                  </span>
+                ) : (
+                  <span className="flex items-center text-xs font-bold text-rose-600">
+                    <XCircle className="h-4 w-4 mr-1" /> ERROR
+                  </span>
+                )}
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="text-2xl font-bold text-primary-900">
+                  {redis.latencyMs ?? 0} ms
+                </div>
+                <p className="text-xs text-slate-500 mt-1">Latensi respon in-memory cache</p>
+              </CardContent>
+            </Card>
+
+            {/* Storage */}
+            <Card className="border-border-subtle">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 bg-surface-bg/50">
+                <CardTitle className="text-xs font-semibold text-slate-600 uppercase flex items-center gap-1.5">
+                  <HardDrive className="h-4 w-4 text-indigo-600" />
+                  S3 / Cloudflare R2
+                </CardTitle>
+                {isOnline(storage.status) ? (
+                  <span className="flex items-center text-xs font-bold text-emerald-600">
+                    <CheckCircle2 className="h-4 w-4 mr-1" /> ONLINE
+                  </span>
+                ) : (
+                  <span className="flex items-center text-xs font-bold text-rose-600">
+                    <XCircle className="h-4 w-4 mr-1" /> ERROR
+                  </span>
+                )}
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="text-2xl font-bold text-primary-900">
+                  {storage.latencyMs ?? 0} ms
+                </div>
+                <p className="text-xs text-slate-500 mt-1">Bucket: {storage.bucket || '-'}</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })()}
     </div>
   );
 }
