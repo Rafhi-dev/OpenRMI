@@ -304,7 +304,7 @@ export function LiveMonitoringTab({ periodId, onStatusChange }: LiveMonitoringTa
           <div>
             <p className="text-xs text-slate-500 font-medium">Dokumen Pasca-FGD</p>
             <h3 className="text-xl font-extrabold text-primary-900">
-              {data.supplementarySummary.completed} / {data.supplementarySummary.total}
+              {data.supplementarySummary?.completed ?? 0} / {data.supplementarySummary?.total ?? (data.supplementarySummary as any)?.totalDocuments ?? 0}
             </h3>
             <p className="text-[11px] text-slate-500">Siap dianalisis cerdas AI</p>
           </div>

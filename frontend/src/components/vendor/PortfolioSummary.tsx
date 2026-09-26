@@ -65,82 +65,97 @@ export function PortfolioSummary() {
         </p>
       </div>
 
-      {data && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold text-slate-500 uppercase">
-                  Perusahaan Klien Terdaftar
-                </CardTitle>
-                <Briefcase className="h-4 w-4 text-brand-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary-900">
-                  {data.macroSummary.totalTenants}
-                </div>
-                <p className="text-xs text-slate-500 mt-1">Tenant di bawah portofolio vendor</p>
-              </CardContent>
-            </Card>
+      {data && (() => {
+        const macro = data.macroSummary || {
+          totalTenants: (data as any).vendorInfo?.currentTenants ?? 0,
+          totalConsultants: (data as any).vendorInfo?.activeConsultants ?? 0,
+          totalActiveAssignments: 0,
+        };
+        const list = data.tenantsProgress || (data as any).tenants?.map((t: any) => ({
+          tenantId: t.tenantId,
+          tenantName: t.name,
+          tenantCode: t.code,
+          industryCluster: t.industryCluster,
+          currentPeriod: t.latestPeriod,
+          leadConsultant: t.activeConsultants?.[0]?.fullName || null,
+        })) || [];
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold text-slate-500 uppercase">
-                  Tim Konsultan Asesor
-                </CardTitle>
-                <Users className="h-4 w-4 text-emerald-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary-900">
-                  {data.macroSummary.totalConsultants}
-                </div>
-                <p className="text-xs text-slate-500 mt-1">Asesor tersertifikasi aktif</p>
-              </CardContent>
-            </Card>
+        return (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-semibold text-slate-500 uppercase">
+                    Perusahaan Klien Terdaftar
+                  </CardTitle>
+                  <Briefcase className="h-4 w-4 text-brand-blue-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-primary-900">
+                    {macro.totalTenants ?? 0}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Tenant di bawah portofolio vendor</p>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold text-slate-500 uppercase">
-                  Penugasan Berjalan (Active)
-                </CardTitle>
-                <FileCheck className="h-4 w-4 text-indigo-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary-900">
-                  {data.macroSummary.totalActiveAssignments}
-                </div>
-                <p className="text-xs text-slate-500 mt-1">Proyek asesmen dengan e-NDA aktif</p>
-              </CardContent>
-            </Card>
-          </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-semibold text-slate-500 uppercase">
+                    Tim Konsultan Asesor
+                  </CardTitle>
+                  <Users className="h-4 w-4 text-emerald-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-primary-900">
+                    {macro.totalConsultants ?? 0}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Asesor tersertifikasi aktif</p>
+                </CardContent>
+              </Card>
 
-          {/* Tabel Progres Makro Klien */}
-          <div className="bg-white rounded-lg border border-border-subtle shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-border-subtle">
-              <h3 className="text-sm font-bold text-primary-900">Status Progres Klien Asesmen</h3>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-semibold text-slate-500 uppercase">
+                    Penugasan Berjalan (Active)
+                  </CardTitle>
+                  <FileCheck className="h-4 w-4 text-indigo-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-primary-900">
+                    {macro.totalActiveAssignments ?? 0}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Proyek asesmen dengan e-NDA aktif</p>
+                </CardContent>
+              </Card>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-primary-900">
-                <thead className="bg-surface-bg border-b border-border-subtle text-xs uppercase font-semibold text-slate-600">
-                  <tr>
-                    <th className="px-6 py-3.5">Perusahaan Klien</th>
-                    <th className="px-6 py-3.5">Klaster</th>
-                    <th className="px-6 py-3.5">Tahun Buku</th>
-                    <th className="px-6 py-3.5">Tahapan Asesmen</th>
-                    <th className="px-6 py-3.5">Lead Assessor</th>
-                    <th className="px-6 py-3.5 text-right">Skor RMI Akhir</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-subtle">
-                  {data.tenantsProgress.length === 0 ? (
+
+            {/* Tabel Progres Makro Klien */}
+            <div className="bg-white rounded-lg border border-border-subtle shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-border-subtle">
+                <h3 className="text-sm font-bold text-primary-900">Status Progres Klien Asesmen</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-primary-900">
+                  <thead className="bg-surface-bg border-b border-border-subtle text-xs uppercase font-semibold text-slate-600">
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-slate-400 text-xs">
-                        Belum ada data klien terdaftar.
-                      </td>
+                      <th className="px-6 py-3.5">Perusahaan Klien</th>
+                      <th className="px-6 py-3.5">Klaster</th>
+                      <th className="px-6 py-3.5">Tahun Buku</th>
+                      <th className="px-6 py-3.5">Tahapan Asesmen</th>
+                      <th className="px-6 py-3.5">Lead Assessor</th>
+                      <th className="px-6 py-3.5 text-right">Skor RMI Akhir</th>
                     </tr>
-                  ) : (
-                    data.tenantsProgress.map((tp) => (
-                      <tr key={tp.tenantId} className="hover:bg-surface-bg/50 transition-colors">
+                  </thead>
+                  <tbody className="divide-y border-border-subtle">
+                    {list.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-slate-400 text-xs">
+                          Belum ada data klien terdaftar.
+                        </td>
+                      </tr>
+                    ) : (
+                      list.map((tp: any) => (
+                        <tr key={tp.tenantId} className="hover:bg-surface-bg/50 transition-colors">
                         <td className="px-6 py-4 font-semibold text-primary-900">
                           {tp.tenantName}
                           <span className="block text-[11px] font-mono text-slate-400 font-normal">
@@ -188,8 +203,9 @@ export function PortfolioSummary() {
               </table>
             </div>
           </div>
-        </>
-      )}
+            </>
+          );
+        })()}
     </div>
   );
 }

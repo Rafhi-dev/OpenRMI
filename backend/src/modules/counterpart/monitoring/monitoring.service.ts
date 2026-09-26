@@ -167,8 +167,17 @@ export class CounterpartMonitoringService {
       },
     });
 
+    const total = supplementaryStats.reduce((sum, s) => sum + s._count.id, 0);
+    const completed = supplementaryStats.find((s) => s.ragIngestionStatus === 'COMPLETED')?._count.id || 0;
+    const processing = supplementaryStats.find((s) => s.ragIngestionStatus === 'PROCESSING')?._count.id || 0;
+    const pending = supplementaryStats.find((s) => s.ragIngestionStatus === 'PENDING')?._count.id || 0;
+
     const supplementarySummary = {
-      totalDocuments: supplementaryStats.reduce((sum, s) => sum + s._count.id, 0),
+      total,
+      totalDocuments: total,
+      completed,
+      processing,
+      pending,
       byStatus: Object.fromEntries(supplementaryStats.map((s) => [s.ragIngestionStatus, s._count.id])),
     };
 

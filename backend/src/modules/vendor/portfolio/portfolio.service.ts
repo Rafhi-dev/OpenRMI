@@ -81,15 +81,57 @@ export class VendorPortfolioService {
       };
     });
 
+    const totalTenants = vendor._count.tenants;
+    const totalConsultants = vendor._count.users;
+    const totalActiveAssignments = tenants.reduce((acc, t) => acc + t.assignments.length, 0);
+
+    const tenantsProgress = tenants.map((tenant) => {
+      const latestPeriod = tenant.periods[0];
+      const evaluationCount = latestPeriod?._count.evaluations || 0;
+      const targetEvaluations = tenant.industryCluster === 'ASURANSI' ? 41 : 42;
+      const progressPercent = Math.min(100, Math.round((evaluationCount / targetEvaluations) * 100));
+      const leadConsultant = tenant.assignments[0]?.consultant.fullName || null;
+
+      return {
+        tenantId: tenant.id,
+        tenantName: tenant.name,
+        tenantCode: tenant.code,
+        industryCluster: tenant.industryCluster,
+        isActive: tenant.isActive,
+        currentPeriod: latestPeriod
+          ? {
+              id: latestPeriod.id,
+              year: latestPeriod.year,
+              status: latestPeriod.status,
+              finalRmiScore: latestPeriod.finalRmiScore ? Number(latestPeriod.finalRmiScore) : null,
+              maturityPhase: latestPeriod.maturityPhase || null,
+              evidenceCount: tenant._count.evidences,
+              supplementaryDocCount: latestPeriod._count.supplementaryDocs,
+              evaluationCount,
+              recommendationCount: latestPeriod._count.recommendations,
+              progressPercent,
+            }
+          : null,
+        leadConsultant,
+        activeConsultants: tenant.assignments.map((a) => a.consultant),
+      };
+    });
+
     return {
+      macroSummary: {
+        totalTenants,
+        totalConsultants,
+        totalActiveAssignments,
+      },
+      tenantsProgress,
       vendorInfo: {
         id: vendor.id,
         name: vendor.name,
         code: vendor.code,
         licenseStatus: vendor.licenseStatus,
         maxTenants: vendor.maxTenants,
-        currentTenants: vendor._count.tenants,
-        activeConsultants: vendor._count.users,
+        currentTenants: totalTenants,
+        activeConsultants: totalConsultants,
       },
       tenants: tenantSummaries,
     };

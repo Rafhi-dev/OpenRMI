@@ -72,7 +72,7 @@ export default function CounterpartDashboardPage() {
 
   const selectedPeriod = periods.find((p) => p.id === selectedPeriodId) || periods[0];
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'FINALIZED':
         return <Badge variant="success">Final & Terkunci</Badge>;
@@ -145,7 +145,7 @@ export default function CounterpartDashboardPage() {
                   >
                     {periods.map((p) => (
                       <option key={p.id} value={p.id}>
-                        Tahun Buku {p.year} ({p.status.replace(/_/g, ' ')})
+                        Tahun Buku {p.year} ({p.status ? p.status.replace(/_/g, ' ') : 'ACTIVE'})
                       </option>
                     ))}
                   </select>

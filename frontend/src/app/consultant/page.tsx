@@ -141,8 +141,8 @@ export default function ConsultantDashboardPage() {
                     className="bg-slate-800 text-white text-xs font-bold rounded-lg px-3 py-1.5 border border-slate-700 pr-8 focus:outline-none focus:ring-1 focus:ring-brand-blue-500 cursor-pointer"
                   >
                     {assignments.map((a) => (
-                      <option key={a.id} value={a.period.id}>
-                        {a.tenant.name} &bull; Tahun {a.period.year} ({a.period.status.replace(/_/g, ' ')})
+                      <option key={a.id} value={a.period?.id}>
+                        {a.tenant?.name || 'Klien'} &bull; Tahun {a.period?.year || '-'} ({a.period?.status ? a.period.status.replace(/_/g, ' ') : 'ACTIVE'})
                       </option>
                     ))}
                   </select>
@@ -153,10 +153,10 @@ export default function ConsultantDashboardPage() {
                 </span>
               )}
 
-              {selectedAssignment && (
+              {selectedAssignment?.period && (
                 <div className="flex items-center space-x-2">
                   <Badge variant="primary" className="text-[10px]">
-                    Klaster {selectedAssignment.period.modelCluster}
+                    Klaster {selectedAssignment.period.modelCluster || 'UMUM'}
                   </Badge>
 
                   <span className="inline-flex items-center space-x-1 text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
@@ -176,7 +176,7 @@ export default function ConsultantDashboardPage() {
               )}
             </div>
 
-            {selectedAssignment?.period.finalRmiScore && (
+            {selectedAssignment?.period?.finalRmiScore && (
               <div className="text-xs text-slate-300 flex items-center space-x-2">
                 <span>Skor RMI Terhitung:</span>
                 <span className="font-extrabold text-white bg-brand-blue-600 px-2.5 py-0.5 rounded">
@@ -231,42 +231,42 @@ export default function ConsultantDashboardPage() {
               {activeTab === 'evaluation' && (
                 <ParameterMatrixWorkspace
                   periodId={selectedPeriodId}
-                  isLocked={selectedAssignment?.period.isLocked}
+                  isLocked={selectedAssignment?.period?.isLocked}
                 />
               )}
 
               {activeTab === 'performance' && (
                 <PerformanceCalculationSheet
                   periodId={selectedPeriodId}
-                  isLocked={selectedAssignment?.period.isLocked}
+                  isLocked={selectedAssignment?.period?.isLocked}
                 />
               )}
 
               {activeTab === 'recommendations' && (
                 <PriorityMatrixWorkspace
                   periodId={selectedPeriodId}
-                  isLocked={selectedAssignment?.period.isLocked}
+                  isLocked={selectedAssignment?.period?.isLocked}
                 />
               )}
 
               {activeTab === 'post-fgd-ai' && (
                 <PostFgdAiModal
                   periodId={selectedPeriodId}
-                  isLocked={selectedAssignment?.period.isLocked}
+                  isLocked={selectedAssignment?.period?.isLocked}
                 />
               )}
 
               {activeTab === 'historical' && (
                 <HistoricalBaselineTab
                   periodId={selectedPeriodId}
-                  isLocked={selectedAssignment?.period.isLocked}
+                  isLocked={selectedAssignment?.period?.isLocked}
                 />
               )}
 
               {activeTab === 'reports' && (
                 <OfficialReportsTab
                   periodId={selectedPeriodId}
-                  isLocked={selectedAssignment?.period.isLocked}
+                  isLocked={selectedAssignment?.period?.isLocked}
                 />
               )}
             </>
