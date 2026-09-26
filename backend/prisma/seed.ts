@@ -220,6 +220,137 @@ async function main() {
     }
   }
 
+  // 5. Seed Demo Vendor, Client Tenant, Consultant & Counterpart
+  console.log('🏢 Seeding Demo Vendor, Tenant, Consultant & Counterpart...');
+  
+  // Vendor
+  const demoVendor = await prisma.vendor.upsert({
+    where: { code: 'VEND-MAS' },
+    update: {},
+    create: {
+      name: 'PT Mitra Audit Solusindo (Vendor Konsultan)',
+      code: 'VEND-MAS',
+      phone: '08123456789',
+      email: 'vendor@openrmi.id',
+      maxTenants: 10,
+    },
+  });
+
+  const vendorPassword = await bcrypt.hash('VendorOpenRMI2024!', salt);
+  await prisma.user.upsert({
+    where: { email: 'vendor@openrmi.id' },
+    update: {
+      vendorId: demoVendor.id,
+      username: 'vendor',
+    },
+    create: {
+      email: 'vendor@openrmi.id',
+      username: 'vendor',
+      fullName: 'Budi Santoso (Admin Vendor MAS)',
+      passwordHash: vendorPassword,
+      role: UserRole.VENDOR,
+      vendorId: demoVendor.id,
+      isActive: true,
+    },
+  });
+
+  // Client Tenant
+  const demoTenant = await prisma.tenant.upsert({
+    where: { code: 'PELINDO' },
+    update: {
+      vendorId: demoVendor.id,
+    },
+    create: {
+      vendorId: demoVendor.id,
+      name: 'PT Pelabuhan Indonesia Persero',
+      code: 'PELINDO',
+      industryCluster: 'UMUM',
+    },
+  });
+
+  // Active Assessment Period 2025
+  const activePeriod = await prisma.assessmentPeriod.upsert({
+    where: {
+      tenantId_year: {
+        tenantId: demoTenant.id,
+        year: 2025,
+      },
+    },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      year: 2025,
+      status: 'SCORING_STAGE',
+      modelCluster: 'UMUM',
+      aspectDimScore: 3.50,
+      perfScore: 85.00,
+      adjustmentScore: 0.00,
+      finalRmiScore: 3.50,
+      maturityPhase: 'Praktik yang Baik (+)',
+    },
+  });
+
+  // Consultant User
+  const consultantPassword = await bcrypt.hash('ConsultantOpenRMI2024!', salt);
+  const consultantUser = await prisma.user.upsert({
+    where: { email: 'consultant@openrmi.id' },
+    update: {
+      vendorId: demoVendor.id,
+      username: 'consultant',
+    },
+    create: {
+      email: 'consultant@openrmi.id',
+      username: 'consultant',
+      fullName: 'Dr. Hendra Gunawan, CRMA (Lead Assessor)',
+      passwordHash: consultantPassword,
+      role: UserRole.EXTERNAL_CONSULTANT,
+      vendorId: demoVendor.id,
+      agencyName: 'PT Mitra Audit Solusindo',
+      isActive: true,
+    },
+  });
+
+  // Assign Consultant to Tenant & Period
+  const existingAssignment = await prisma.consultantAssignment.findFirst({
+    where: {
+      tenantId: demoTenant.id,
+      consultantId: consultantUser.id,
+      periodId: activePeriod.id,
+    },
+  });
+
+  if (!existingAssignment) {
+    await prisma.consultantAssignment.create({
+      data: {
+        tenantId: demoTenant.id,
+        consultantId: consultantUser.id,
+        periodId: activePeriod.id,
+        startDate: new Date('2025-01-01'),
+        endDate: new Date('2025-12-31'),
+        isActive: true,
+      },
+    });
+  }
+
+  // Counterpart User
+  const counterpartPassword = await bcrypt.hash('CounterpartOpenRMI2024!', salt);
+  await prisma.user.upsert({
+    where: { email: 'counterpart@openrmi.id' },
+    update: {
+      tenantId: demoTenant.id,
+      username: 'counterpart',
+    },
+    create: {
+      email: 'counterpart@openrmi.id',
+      username: 'counterpart',
+      fullName: 'Siti Rahmawati (Risk Counterpart PELINDO)',
+      passwordHash: counterpartPassword,
+      role: UserRole.COUNTERPART_TEAM,
+      tenantId: demoTenant.id,
+      isActive: true,
+    },
+  });
+
   console.log('✅ OpenRMI Seeding completed successfully!');
 }
 

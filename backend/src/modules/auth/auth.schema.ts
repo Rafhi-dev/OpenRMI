@@ -1,14 +1,19 @@
 import { z } from 'zod';
 
-export const loginSchema = z.object({
-  identifier: z
-    .string()
-    .min(3, 'Username atau Email minimal 3 karakter')
-    .trim(),
-  password: z
-    .string()
-    .min(6, 'Password minimal 6 karakter'),
-});
+export const loginSchema = z
+  .object({
+    identifier: z.string().trim().optional(),
+    identity: z.string().trim().optional(),
+    password: z.string().min(6, 'Password minimal 6 karakter'),
+  })
+  .refine((data) => !!(data.identifier || data.identity), {
+    message: 'Username atau Email wajib diisi',
+    path: ['identifier'],
+  })
+  .transform((data) => ({
+    identifier: (data.identifier || data.identity)!,
+    password: data.password,
+  }));
 
 export const impersonateSchema = z.object({
   targetVendorId: z
