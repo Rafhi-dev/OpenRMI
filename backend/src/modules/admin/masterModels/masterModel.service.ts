@@ -97,6 +97,91 @@ export class AdminMasterModelService {
 
     return updated;
   }
+
+  /**
+   * Memperbarui nama Master Dimensi (D1 s.d. D5)
+   */
+  async updateDimension(adminId: string, id: number, data: { name: string }) {
+    const dim = await prisma.dimension.findUnique({ where: { id } });
+    if (!dim) {
+      throw new AppError(404, 'DIMENSION_NOT_FOUND', `Dimensi dengan ID ${id} tidak ditemukan.`);
+    }
+
+    const updated = await prisma.dimension.update({
+      where: { id },
+      data: { name: data.name.trim() },
+    });
+
+    await logAuditEvent({
+      userId: adminId,
+      action: 'DIMENSION_UPDATE',
+      targetTable: 'dimensions',
+      targetId: String(id),
+      oldValues: { name: dim.name },
+      newValues: { name: updated.name },
+    });
+
+    return updated;
+  }
+
+  /**
+   * Memperbarui nama Sub-Dimensi
+   */
+  async updateSubDimension(adminId: string, id: number, data: { name: string }) {
+    const subDim = await prisma.subDimension.findUnique({ where: { id } });
+    if (!subDim) {
+      throw new AppError(404, 'SUB_DIMENSION_NOT_FOUND', `Sub-Dimensi dengan ID ${id} tidak ditemukan.`);
+    }
+
+    const updated = await prisma.subDimension.update({
+      where: { id },
+      data: { name: data.name.trim() },
+    });
+
+    await logAuditEvent({
+      userId: adminId,
+      action: 'SUB_DIMENSION_UPDATE',
+      targetTable: 'sub_dimensions',
+      targetId: String(id),
+      oldValues: { name: subDim.name },
+      newValues: { name: updated.name },
+    });
+
+    return updated;
+  }
+
+  /**
+   * Memperbarui Parameter RMI (Judul & Deskripsi)
+   */
+  async updateParameter(
+    adminId: string,
+    id: number,
+    data: { title: string; description?: string }
+  ) {
+    const param = await prisma.parameter.findUnique({ where: { id } });
+    if (!param) {
+      throw new AppError(404, 'PARAMETER_NOT_FOUND', `Parameter dengan ID ${id} tidak ditemukan.`);
+    }
+
+    const updated = await prisma.parameter.update({
+      where: { id },
+      data: {
+        title: data.title.trim(),
+        description: data.description !== undefined ? data.description?.trim() : undefined,
+      },
+    });
+
+    await logAuditEvent({
+      userId: adminId,
+      action: 'PARAMETER_UPDATE',
+      targetTable: 'parameters',
+      targetId: String(id),
+      oldValues: { title: param.title, description: param.description },
+      newValues: { title: updated.title, description: updated.description },
+    });
+
+    return updated;
+  }
 }
 
 export const adminMasterModelService = new AdminMasterModelService();

@@ -28,6 +28,75 @@ export class AdminMasterModelController {
     }
   }
 
+  async updateDimension(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new AppError(401, 'UNAUTHORIZED', 'Autentikasi diperlukan');
+      const id = parseInt(req.params.id as string, 10);
+      if (isNaN(id)) throw new AppError(400, 'INVALID_ID', 'ID Dimensi harus berupa angka');
+
+      const { name } = req.body;
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        throw new AppError(400, 'INVALID_NAME', 'Nama dimensi wajib diisi');
+      }
+
+      const updated = await adminMasterModelService.updateDimension(req.user.userId, id, { name });
+      res.status(200).json({
+        success: true,
+        message: 'Dimensi berhasil diperbarui',
+        data: updated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateSubDimension(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new AppError(401, 'UNAUTHORIZED', 'Autentikasi diperlukan');
+      const id = parseInt(req.params.id as string, 10);
+      if (isNaN(id)) throw new AppError(400, 'INVALID_ID', 'ID Sub-Dimensi harus berupa angka');
+
+      const { name } = req.body;
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        throw new AppError(400, 'INVALID_NAME', 'Nama sub-dimensi wajib diisi');
+      }
+
+      const updated = await adminMasterModelService.updateSubDimension(req.user.userId, id, { name });
+      res.status(200).json({
+        success: true,
+        message: 'Sub-Dimensi berhasil diperbarui',
+        data: updated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateParameter(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new AppError(401, 'UNAUTHORIZED', 'Autentikasi diperlukan');
+      const id = parseInt(req.params.id as string, 10);
+      if (isNaN(id)) throw new AppError(400, 'INVALID_ID', 'ID Parameter harus berupa angka');
+
+      const { title, description } = req.body;
+      if (!title || typeof title !== 'string' || !title.trim()) {
+        throw new AppError(400, 'INVALID_TITLE', 'Judul parameter wajib diisi');
+      }
+
+      const updated = await adminMasterModelService.updateParameter(req.user.userId, id, {
+        title,
+        description,
+      });
+      res.status(200).json({
+        success: true,
+        message: 'Parameter berhasil diperbarui',
+        data: updated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async updateCriterion(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) throw new AppError(401, 'UNAUTHORIZED', 'Autentikasi diperlukan');

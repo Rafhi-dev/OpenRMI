@@ -2,6 +2,7 @@ import { prisma } from '../../../config/database';
 import { AppError } from '../../../middlewares/errorHandler';
 import { logAuditEvent } from '../../../utils/auditLogger';
 import { RmiScoringEngine } from '../../scoring/scoring.engine';
+import { getMaturityPhase } from '../../scoring/scoring.constants';
 import { SaveEvaluationDto, BatchSaveEvaluationDto } from './evaluation.schema';
 import { UserRole } from '@prisma/client';
 
@@ -362,10 +363,13 @@ export class ConsultantEvaluationService {
       },
     });
 
-    // Perbarui agregasi skor aspek dimensi periode jika diperlukan
-    await this.updatePeriodAspectScore(period.tenantId, input.periodId);
+    // Perbarui agregasi skor aspek dimensi dan skor akhir RMI periode secara real-time
+    const realtimeScores = await this.updatePeriodAspectScore(period.tenantId, input.periodId);
 
-    return evaluation;
+    return {
+      ...evaluation,
+      realtimeScores,
+    };
   }
 
   /**
@@ -421,19 +425,20 @@ export class ConsultantEvaluationService {
       },
     });
 
-    await this.updatePeriodAspectScore(period.tenantId, input.periodId);
+    const realtimeScores = await this.updatePeriodAspectScore(period.tenantId, input.periodId);
 
     return {
       message: `Berhasil menyimpan ${results.length} evaluasi kriteria`,
       totalSaved: results.length,
       evaluations: results,
+      realtimeScores,
     };
   }
 
   /**
-   * Rekalkulasi dan perbarui skor aspek dimensi pada tabel assessment_periods
+   * Rekalkulasi dan perbarui skor aspek dimensi & skor akhir RMI secara real-time pada tabel assessment_periods
    */
-  private async updatePeriodAspectScore(tenantId: string, periodId: string) {
+  async updatePeriodAspectScore(tenantId: string, periodId: string) {
     const parameters = await prisma.parameter.findMany({
       include: {
         criteria: true,
@@ -448,19 +453,62 @@ export class ConsultantEvaluationService {
     const paramScores: number[] = [];
 
     for (const p of parameters) {
-      const scores = p.criteria.map((c) => evalMap.get(c.id)).filter((s) => s !== undefined) as number[];
-      if (scores.length === p.criteria.length && p.criteria.length > 0) {
+      const scores = p.criteria
+        .map((c) => evalMap.get(c.id))
+        .filter((s) => s !== undefined) as number[];
+      // Weakest-link parameter score jika kriteria telah diisi (lengkap maupun draf)
+      if (scores.length > 0) {
         paramScores.push(RmiScoringEngine.calculateParameterScore(scores));
       }
     }
 
     if (paramScores.length > 0) {
       const aspectScore = RmiScoringEngine.calculateAspectDimensionScore(paramScores);
+
+      // Cek apakah evaluasi aspek kinerja (Final Rating & Komposit) sudah diisi
+      const perfEvaluation = await prisma.performanceEvaluation.findUnique({
+        where: { periodId },
+      });
+
+      let perfAdjustment = 0;
+      let combinedPerfScore: number | null = null;
+
+      if (perfEvaluation) {
+        const perfResult = RmiScoringEngine.calculatePerformanceAdjustment(aspectScore, {
+          finalRating: perfEvaluation.finalRating,
+          compositeRiskRating: perfEvaluation.compositeRating,
+        });
+        perfAdjustment = perfResult.scoreAdjustment;
+        combinedPerfScore = perfResult.combinedPerformanceScore;
+      }
+
+      // Skor Akhir RMI = Skor Aspek Dimensi + Penyesuaian Kinerja (Clamped 1.00 s.d. 5.00)
+      const rawFinalScore = aspectScore + perfAdjustment;
+      const finalRmiScore = Math.max(1.0, Math.min(5.0, Math.round(rawFinalScore * 100) / 100));
+      const maturityPhase = getMaturityPhase(finalRmiScore);
+
       await prisma.assessmentPeriod.update({
         where: { id: periodId },
-        data: { aspectDimScore: aspectScore },
+        data: {
+          aspectDimScore: aspectScore,
+          perfScore: combinedPerfScore !== null ? combinedPerfScore : undefined,
+          adjustmentScore: perfAdjustment,
+          finalRmiScore,
+          maturityPhase,
+        },
       });
+
+      return {
+        aspectDimScore: aspectScore,
+        adjustmentScore: perfAdjustment,
+        finalRmiScore,
+        maturityPhase,
+        evaluatedParametersCount: paramScores.length,
+        totalParametersCount: parameters.length,
+      };
     }
+
+    return null;
   }
 }
 
